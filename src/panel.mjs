@@ -3,21 +3,13 @@
 // innerHTML, because commit messages and workflow names are text from outside this page.
 import { progressAt, progressLabel } from './progress.mjs';
 import { describeNextRun } from './schedule.mjs';
-
-export const ago = (iso, now = Date.now()) => {
-  const s = Math.max(0, (now - Date.parse(iso)) / 1000);
-  if (s < 60) return 'just now';
-  if (s < 3600) return Math.floor(s / 60) + 'm ago';
-  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
-  return Math.floor(s / 86400) + 'd ago';
-};
+import { ago } from './timewords.mjs';
+import { isTask, STATUS_WORD, safeUrl } from './details.mjs';
 
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const link = (text, url, cls) => { const a = el('a', cls, text); a.href = url; a.target = '_blank'; a.rel = 'noopener'; return a; };
-const safeUrl = u => (typeof u === 'string' && /^https:\/\//.test(u) ? u : null);
 
 const KIND_LABEL = { workflow: 'GitHub Action', builder: 'Coding agent', human: 'Human', local: 'Cowork · local agent', site: 'Website' };
-const STATUS_WORD = { running: 'Working', ok: 'Healthy', fail: 'Failed', idle: 'Idle', asleep: 'Scheduled' };
 const BAR = { running: 55, ok: 100, fail: 100, idle: 60, asleep: 0 };
 const SITE_WORD = { running: 'Live', fail: 'Down', idle: 'Checking…' };   // a website is working while it answers
 
@@ -35,9 +27,9 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
   titles.append(el('h2', '', agent.kind === 'site' ? `${agent.island} website` : agent.name));
   const chips = el('div', 'chips'), chip = el('span', `chip ${agent.status}`);
   chip.append(el('span', `dot ${agent.status}`), agent.disabled ? 'Disabled' : d.queued ? 'Queued' : (agent.kind === 'site' ? SITE_WORD : STATUS_WORD)[agent.status] || agent.status);
-  const isTask = agent.kind === 'workflow' && 'progress' in d;   // only tasks carry progress and a schedule
-  const prog = isTask ? progressAt(d.progress, now) : null;
-  const nextRun = isTask && agent.status !== 'running' ? describeNextRun({ enabled: !agent.disabled, schedule: d.schedule }, now) : null;   // in the viewer's own time
+  const task = isTask(agent);   // only tasks carry progress and a schedule
+  const prog = task ? progressAt(d.progress, now) : null;
+  const nextRun = task && agent.status !== 'running' ? describeNextRun({ enabled: !agent.disabled, schedule: d.schedule }, now) : null;   // in the viewer's own time
   chips.append(chip, el('span', 'when', when));
   if (prog) chips.append(el('span', 'pct', progressLabel(prog)));
   titles.append(chips);
@@ -65,6 +57,7 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
     if (url) buttons.append(link('↗ Open', url, 'open alt'));
   } else if (url) buttons.append(link('↗ Open', url, 'open'));
   const focus = el('button', 'ghost', '⌖ Focus'); focus.type = 'button'; focus.onclick = () => actions.focus?.();
+  if (task && actions.details) { const more = el('button', 'ghost', '☰ Details'); more.type = 'button'; more.onclick = actions.details; buttons.append(more); }
   buttons.append(focus);
   const extras = [];
   if (offer?.kind === 'activate' && act.confirming) {

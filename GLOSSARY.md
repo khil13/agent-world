@@ -68,6 +68,10 @@ _Avoid_: Zone, cluster
 When a task that is not working will start by itself next, worked out from its schedule and shown in the viewer's own time. It says "schedule unknown" when the schedule cannot be read, and never a guessed time.
 _Avoid_: Due, ETA (an ETA is when a run that is going will finish)
 
+**Details**:
+The drawer a task's card opens with its **Details** button: an Overview, the Progress of the run that is going, and the History of recent runs, all taken from the task's own data and never written by hand.
+_Avoid_: Panel (that is the card or the list on the right), modal
+
 **Stuck**:
 A working task whose run has taken much longer than that task usually does. Shown amber first, then red.
 _Avoid_: Hung, frozen

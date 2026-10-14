@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { typicalMs, progressBasis, progressAt, progressLabel } from '../src/progress.mjs';
+import { typicalMs, progressBasis, progressAt, progressLabel, finishAt } from '../src/progress.mjs';
 
 const MIN = 60e3;
 const T0 = Date.parse('2026-10-02T12:00:00Z');
@@ -84,4 +84,34 @@ test('the label says it is an estimate with a ≈', () => {
   assert.equal(progressLabel({ value: 37, exact: true }), '37%');
   assert.equal(progressLabel({ value: 50, exact: false }), '≈50%');
   assert.equal(progressLabel(null), '');
+});
+
+test('a running task knows the step it is on, as short text, when the run says so', () => {
+  assert.equal(progressBasis(going(3, { steps: { done: 3, total: 8, current: 'Fetch data' } }), []).step, 'Fetch data');
+  assert.equal(progressBasis(going(3, { steps: { done: 3, total: 8 } }), []).step, null);
+  assert.equal(progressBasis(going(3, { steps: { done: 3, total: 8, current: 42 } }), []).step, null, 'a step name that is not text is ignored');
+  assert.equal(progressBasis(going(3, { steps: { done: 3, total: 8, current: 'x'.repeat(200) } }), []).step.length, 80, 'and a long one is cut');
+  assert.equal(progressBasis(going(3), [ok(6)]).step, null);
+});
+
+test('a running task is expected to finish when it started plus how long it usually takes', () => {
+  const basis = progressBasis(going(3), [ok(6), ok(6)]);
+  assert.deepEqual(finishAt(basis, T0), { at: T0 + 3 * MIN });
+  assert.deepEqual(finishAt(basis, T0 + 3 * MIN - 1), { at: T0 + 3 * MIN }, 'still ahead by a millisecond');
+});
+
+test('a run that has gone on longer than usual has no finish time, and is said to be late', () => {
+  const basis = progressBasis(going(10), [ok(6), ok(6)]);
+  assert.deepEqual(finishAt(basis, T0), { late: true });
+  assert.deepEqual(finishAt(progressBasis(going(3), [ok(6)]), T0 + 3 * MIN), { late: true }, 'exactly at the usual time is already late');
+});
+
+test('there is no finish time without a past run to compare with, and none for a run that is not running', () => {
+  assert.equal(finishAt(progressBasis(going(3), []), T0), null);
+  assert.equal(finishAt(progressBasis(going(3, { steps: { done: 3, total: 8 } }), []), T0), null, 'steps say how far, not when');
+  assert.equal(finishAt(progressBasis({ status: 'queued', concl: null, date: at(1) }, [ok(6)]), T0), null);
+  assert.equal(finishAt(progressBasis(ok(6), [ok(6)]), T0), null);
+  assert.equal(finishAt(progressBasis(failed(3), [ok(6)]), T0), null);
+  assert.equal(finishAt(null, T0), null);
+  assert.equal(finishAt(progressBasis(going(3), [ok(6)]), NaN), null);
 });

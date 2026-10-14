@@ -91,3 +91,10 @@ test('demo tasks have schedules, most readable, one kind that runs only when sta
   const readable = w.agents.filter(a => a.demo && a.details.schedule?.length && nextRunOf(a.details.schedule, NOW) !== null);
   assert.ok(readable.length > 20, 'most of the 45 have a time');
 });
+
+test('a demo run that reports its steps also names the step it is on, with an invented name', () => {
+  const w = buildWorld({ repos: [] }, CONFIG, NOW, { tasks: demoTasks(NOW) });
+  const exact = w.agents.filter(a => a.demo && a.status === 'running' && a.details.progress?.steps);
+  assert.ok(exact.length >= 2);
+  for (const a of exact) assert.match(a.details.progress.step, /^Demo step \d+$/, a.name);
+});

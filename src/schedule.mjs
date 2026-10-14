@@ -1,6 +1,7 @@
 // When a task runs next, from the schedule entries of its workflow (GitHub's cron form: minute hour day-of-month month
 // day-of-week, always in UTC). Pure. Only the plain forms are read: *, numbers, ranges (a-b), lists (a,b) and steps (*/n, a-b/n),
 // with month and weekday names. Anything else is unreadable and gives no time, never a guess.
+import { relative, clock } from './timewords.mjs';
 const MINUTE = 60e3, DAY = 864e5, WEEK = 7 * DAY;
 const SEARCH_DAYS = 366 * 8;   // far enough for a leap day, which comes every fourth year
 
@@ -62,22 +63,6 @@ export function nextRunOf(schedule, after) {
   const times = schedule.map(c => nextRun(c, after));
   return times.every(t => t !== null) ? Math.min(...times) : null;
 }
-
-const relative = ms => {
-  const min = Math.floor(ms / MINUTE);
-  if (min < 1) return 'in under a minute';
-  if (min < 60) return `in ${min} min`;
-  if (min < 1440) return `in ${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}`;
-  const h = Math.floor((min % 1440) / 60);
-  return `in ${Math.floor(min / 1440)} d${h ? ` ${h} h` : ''}`;
-};
-
-// The weekday and time of day, in a time zone (the viewer's own when none is given), with the date when it is a week or more away.
-const clock = (ms, timeZone, withDate) => {
-  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone, weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-    .formatToParts(new Date(ms)).map(x => [x.type, x.value]));
-  return `${p.weekday} ${withDate ? `${p.day} ${p.month} ` : ''}${p.hour}:${p.minute}`;
-};
 
 // What the card says about when a task runs next: "in 3 h 12 min, Wed 06:00", or why there is no time.
 export function describeNextRun(task, now, timeZone) {

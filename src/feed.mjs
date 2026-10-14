@@ -1,6 +1,6 @@
 // The live activity feed: newest event first. Text comes from outside (commit messages, workflow
 // names), so it is only ever set with textContent, and links are limited to https URLs.
-import { ago } from './panel.mjs';
+import { ago } from './timewords.mjs';
 
 const MAX = 14;
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };

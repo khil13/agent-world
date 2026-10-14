@@ -27,7 +27,7 @@ export function demoTasks(now = Date.now()) {
     switch (state) {
       case 'running': {
         const latest = { status: 'in_progress', concl: null, date: ago(2 + (i % 4)), event: 'schedule' };
-        if (v === 0) return withRuns({ ...latest, steps: { done: 2 + (i % 5), total: 8 } });   // exact: the run reports its steps
+        if (v === 0) { const done = 2 + (i % 5); return withRuns({ ...latest, steps: { done, total: 8, current: 'Demo step ' + (done + 1) } }); }   // exact: the run reports its steps
         return withRuns(latest, v === 1 ? history(i) : []);                                    // an estimate, or no figure at all (no past runs)
       }
       case 'queued': return withRuns({ status: 'queued', concl: null, date: ago(1), event: 'schedule' });

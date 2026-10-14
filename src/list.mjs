@@ -2,7 +2,7 @@
 // one line, the agents that need attention, then every repo with a small bar of its mix, the ones to look at first on
 // top. Click a repo to open its agents. Names come from outside, so everything is set with textContent.
 import { overview } from './overview.mjs';
-import { ago } from './panel.mjs';
+import { ago } from './timewords.mjs';
 
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const KIND = { workflow: 'action', builder: 'coding agent', human: 'you', local: 'cowork', site: 'website' };

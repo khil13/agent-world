@@ -19,7 +19,8 @@ export function typicalMs(runs) {
 export function progressBasis(latest, older = []) {
   if (!latest || !latest.status) return null;
   if (latest.status === 'queued') return { state: 'queued' };
-  const common = { startedAt: Date.parse(latest.date), steps: isSteps(latest.steps) ? { done: latest.steps.done, total: latest.steps.total } : null, typicalMs: typicalMs(older) };
+  const step = typeof latest.steps?.current === 'string' ? latest.steps.current.slice(0, 80) : null;   // the name of the step it is on, when the run says
+  const common = { startedAt: Date.parse(latest.date), steps: isSteps(latest.steps) ? { done: latest.steps.done, total: latest.steps.total } : null, step, typicalMs: typicalMs(older) };
   if (latest.status !== 'completed') return { state: 'running', ...common };
   return latest.concl === 'success' ? { state: 'done' } : { state: 'stopped', ...common, ms: latest.ms > 0 ? latest.ms : null };
 }
@@ -37,6 +38,14 @@ export function progressAt(basis, now) {
     return Number.isFinite(elapsed) ? { value: Math.min(ESTIMATE_CAP, Math.max(0, share(elapsed, basis.typicalMs))), exact: false } : null;
   }
   return basis.ms ? { value: Math.min(ESTIMATE_CAP, share(basis.ms, basis.typicalMs)), exact: false } : null;   // stopped early: where it got to
+}
+
+// When a running task is expected to finish: when it started plus how long it usually takes. { at } while that is still ahead,
+// { late: true } once the run has gone on that long, null when there is no past run to compare with or the task is not running.
+export function finishAt(basis, now) {
+  if (!basis || basis.state !== 'running' || !basis.typicalMs || !Number.isFinite(basis.startedAt) || !Number.isFinite(now)) return null;
+  const at = basis.startedAt + basis.typicalMs;
+  return at > now ? { at } : { late: true };
 }
 
 export const progressLabel = p => (p ? `${p.exact ? '' : '≈'}${p.value}%` : '');

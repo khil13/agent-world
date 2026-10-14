@@ -4,7 +4,8 @@ import { buildWorld } from './world.mjs';
 import { loadData } from './data.mjs';
 import { probeAll, siteSignature, siteLatest } from './sites.mjs';
 import { CONFIG } from './config.mjs';
-import { renderPanel, ago } from './panel.mjs';
+import { renderPanel } from './panel.mjs';
+import { ago } from './timewords.mjs';
 import { renderList } from './list.mjs';
 import { replayClock, due, ERRAND_SECONDS } from './anim.mjs';
 import { createFeed } from './feed.mjs';
@@ -14,6 +15,8 @@ import { createRequests } from './requests.mjs';
 import { personal } from './personal.mjs';
 import { demoTasks } from './demo.mjs';
 import { progressAt, progressLabel } from './progress.mjs';
+import { taskDetails, isTask } from './details.mjs';
+import { renderDrawer } from './drawer.mjs';
 
 const mine = personal();   // what this visitor chose just for themselves, kept in their own browser
 // ?demo=tasks fills the CRM islands with invented demo tasks (see demo.mjs); without it the page shows real data only
@@ -33,7 +36,8 @@ toggle.onclick = () => setFeedOpen(feedBox.classList.contains('collapsed'));
 if (mine.choice('feedOpen', ['1', '0'], '0') === '1') setFeedOpen(true);   // collapsed by default
 const labels = $('#labels'), card = $('#card'), side = $('#side');
 const demoTag = $('#demoTag'); if (demoTag) demoTag.hidden = !demoOn;   // an older cached page may not have the label yet
-const state = { builtAt: 0, data: null, probes: {}, world: null, selectedAgent: null, selectedIsland: null, hoverAgent: null, showDormant: false, expanded: new Set(), needsFit: true };
+const state = { builtAt: 0, data: null, probes: {}, world: null, selectedAgent: null, selectedIsland: null, hoverAgent: null, showDormant: false, expanded: new Set(), needsFit: true, drawerOpen: false, drawerTab: 'overview' };
+const drawer = $('#drawer');   // missing in an older cached page, which then simply has no drawer
 const ui = { papers: [], errands: [], hubGlow: 0 };
 const bubbles = new Map();       // agent id -> { el, from, until }
 const islandLabels = new Map();  // island name -> element
@@ -103,9 +107,21 @@ function rebuild() {
 function refreshUi() {
   if (state.world) renderList(side, state.world, state, { island: selectIsland, agent: selectAgent });
   const agent = state.world?.agents.find(a => a.id === state.selectedAgent) || null;
-  renderPanel(card, agent, clearSelection, Date.now(), { focus: () => scene?.focusAgent(state.selectedAgent), activation: agent && activationFor(agent) });
+  renderPanel(card, agent, clearSelection, Date.now(), { focus: () => scene?.focusAgent(state.selectedAgent), activation: agent && activationFor(agent), details: drawer ? openDrawer : null });
+  refreshDrawer(agent);
   if (agent) placeCard();
 }
+
+// ----- the details drawer follows the selected task: it opens from the card's Details button and closes with its button, with Escape,
+// or when the selection moves to something that has no details
+function refreshDrawer(agent = state.world?.agents.find(a => a.id === state.selectedAgent)) {
+  if (!drawer) return;
+  if (state.drawerOpen && !isTask(agent)) state.drawerOpen = false;
+  renderDrawer(drawer, state.drawerOpen ? taskDetails(agent, Date.now()) : null, { tab: state.drawerTab, onTab: t => { state.drawerTab = t; refreshDrawer(); }, onClose: closeDrawer });
+}
+function openDrawer() { state.drawerOpen = true; refreshDrawer(); }
+function closeDrawer() { state.drawerOpen = false; refreshDrawer(); }
+addEventListener('keydown', e => { if (e.key === 'Escape' && state.drawerOpen) closeDrawer(); });
 
 // What the card offers this agent right now, and what its buttons do (null when there is nothing to offer).
 function activationFor(agent) {
@@ -197,6 +213,12 @@ function updateProgress(t) {
     const p = progressAt(sel.details.progress, now), fill = card.querySelector('.bar.known i'), pct = card.querySelector('.pct');
     if (p && fill) fill.style.width = `${p.value}%`;
     if (p && pct) pct.textContent = progressLabel(p);
+  }
+  if (state.drawerOpen && drawer) {   // the open drawer's bar moves too, and its times are redrawn now and then so they do not go stale
+    const p = progressAt(sel?.details?.progress, now), fill = drawer.querySelector('.bar.known i'), pct = drawer.querySelector('.pct');
+    if (p && fill) fill.style.width = `${p.value}%`;
+    if (p && pct) pct.textContent = progressLabel(p);
+    if (second % 15 === 0) refreshDrawer(sel);
   }
 }
 

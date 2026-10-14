@@ -34,7 +34,7 @@ function runResult(run) {
 const runStatus = run => (run.status !== 'completed' ? 'running' : run.concl === 'failure' ? 'fail' : run.concl === 'success' ? 'ok' : 'idle');
 const eventResult = status => (status === 'fail' ? 'fail' : status === 'running' ? 'running' : 'ok');
 const LOCAL_STATUS = { scheduled: 'asleep', running: 'running', fail: 'fail', ok: 'ok', idle: 'idle' };
-const runDetail = run => ({ result: runResult(run), date: run.date, event: run.event, url: run.url });
+const runDetail = run => ({ result: runResult(run), date: run.date, event: run.event, url: run.url, ...(run.ms > 0 ? { ms: run.ms } : {}) });   // ms: how long a finished run took, when the feed says
 const LOCAL_NOTE = 'Not tracked live: this agent is listed by hand, GitHub cannot see its runs.';
 
 function agentsOf(r, localAgents, now, skip) {
