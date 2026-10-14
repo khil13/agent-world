@@ -3,6 +3,9 @@
 // A repo that is not in the loaded data is simply left out of the world, as is anything in it.
 // Optional startUrl: where the Admin's "Open in Cowork" button goes for that agent (https only; a generic link is used without it).
 export const CONFIG = {
+  // The only GitHub repos the world shows, even when more of them appear in the published data. Add a name here to bring a repo in.
+  // Leave the list out to show every active repo. The lobby and the websites below do not depend on it.
+  repos: ['agent-world'],
   // Live websites the world watches: one island each, working while the site answers. The page can only see whether it answers.
   sites: [
     { name: 'NL CRM', url: 'https://els-crm.dinov.workers.dev/' },

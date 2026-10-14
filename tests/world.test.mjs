@@ -129,6 +129,31 @@ test('websites sit beside the repos and the lobby without disturbing them', () =
   assert.deepEqual(world([repo('a')], { localAgents: [] }).islands.map(i => i.name), ['a'], 'no sites configured, none shown');
 });
 
+test('config.repos limits the world to the listed repos: the others make no island, no agent, no event and no local agent', () => {
+  const repos = [repo('keep', { workflows: [wf('Scan')] }), repo('hidden-repo', { workflows: [wf('Other')], commits: [commit('you', 1)] })];
+  const config = { repos: ['keep'], localAgents: [{ name: 'Ghost', repo: 'hidden-repo', schedule: 'x', role: 'x', status: 'scheduled' }] };
+  const w = world(repos, config);
+  assert.deepEqual(w.islands.map(i => i.name), ['keep']);
+  assert.deepEqual(w.agents.map(a => a.id), ['keep::Scan']);
+  assert.ok(w.events.length > 0 && w.events.every(e => e.island === 'keep'));
+  assert.ok(!JSON.stringify(w).includes('hidden-repo'));
+  assert.deepEqual(world(repos, { repos: [], localAgents: [] }).islands, [], 'an empty list shows no repo at all');
+  assert.deepEqual(world(repos, { localAgents: [] }).islands.map(i => i.name), ['hidden-repo', 'keep'], 'without a list every repo is shown');
+});
+
+test('config.repos also limits the closed islands, and leaves the lobby and the websites alone', () => {
+  const repos = [repo('keep'), repo('old', { pushed: iso(24 * 90) }), repo('hidden-repo', { pushed: iso(24 * 90) })];
+  const config = { repos: ['keep', 'old'], localAgents: [{ name: 'Watcher', repo: null, schedule: 'Daily', status: 'scheduled' }], sites: SITES };
+  const w = world(repos, config, { showDormant: true, probes });
+  assert.deepEqual(w.islands.map(i => i.name), ['keep', 'Lobby', 'NL CRM', 'DK CRM', 'CRM landing', 'old']);
+  assert.equal(w.islands.find(i => i.name === 'old').dormant, true);
+});
+
+test('config.repos is only a list when it is an array: anything else shows every repo', () => {
+  const repos = [repo('a'), repo('b')];
+  for (const bad of ['a', null, 7, {}]) assert.deepEqual(world(repos, { repos: bad, localAgents: [] }).islands.map(i => i.name), ['a', 'b']);
+});
+
 test('workflow status comes from its latest run', () => {
   const w = world([repo('a', { workflows: [
     wf('running', { status: 'in_progress', concl: null }), wf('failing', { concl: 'failure' }),

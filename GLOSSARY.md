@@ -20,6 +20,10 @@ _Avoid_: Inactive, disabled, idle, waiting
 A live website the world watches, listed under `sites` in `src/config.mjs`: an island of its own with one agent, working while the site answers and failing when it does not. Only whether it answers is known, never what it says.
 _Avoid_: Repo, page, app
 
+**Shown repos**:
+The GitHub repos the world draws, listed under `repos` in `src/config.mjs`. A repo that is not on the list makes no island, no agent and no event, however active it is. The lobby and the websites are not repos and are always drawn.
+_Avoid_: Whitelist, filter
+
 **Plumbing**:
 A workflow that builds or checks a repo (a Pages deploy, a smoke check, CI) and does no job of its own. Listed in `skipWorkflows` in `src/config.mjs`; it gets no building and no astronaut.
 _Avoid_: Agent

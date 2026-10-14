@@ -37,6 +37,11 @@ hub, and the activity feed lists it. Browsers pause animation in background tabs
 Plumbing workflows (Pages deploys, smoke checks, CI) are not agents and are left out: see `skipWorkflows` in
 `src/config.mjs`. A crowded island is drawn with smaller, flatter, low-profile buildings (down to half size), keeps its free tiles bare, and its astronauts stand right in front of their building, so the agents stay in view.
 
+Which repos appear is decided by `repos` in `src/config.mjs`: only the GitHub repos named there are shown (today just
+`agent-world`), even when more of them show up in the published data, such as a repo that was made public again. To bring a
+repo in, add its name to the list; with no `repos` list every active repo is shown. The lobby and the websites below do not
+depend on it.
+
 ## Websites
 
 Live websites are watched too, one island each, listed under `sites` in `src/config.mjs` (today the four Research CRM

@@ -104,7 +104,9 @@ function layout(islands) {
 }
 
 export function buildWorld(data, config = {}, now = Date.now(), opts = {}) {
-  const repos = (data.repos || []).slice().sort(byName);
+  // config.repos, when it is a list, names the only GitHub repos the world shows (the lobby and the websites do not come from GitHub)
+  const listed = Array.isArray(config.repos) ? new Set(config.repos) : null;
+  const repos = (data.repos || []).filter(r => !listed || listed.has(r.name)).sort(byName);
   const present = new Set(repos.map(r => r.name));
   const locals = (config.localAgents || []).filter(a => !a.repo || present.has(a.repo));
   const isDormant = r => (now - ms(r.pushed)) / DAY > DORMANT_DAYS;
