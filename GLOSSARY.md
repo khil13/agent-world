@@ -44,6 +44,38 @@ _Avoid_: Theme, skin
 To get an agent that is not working to start a run now, with the **Work** button on its card. For a GitHub workflow it starts the run; for an agent outside GitHub it only points the owner to where they can start it. Everyone sees the button; for a viewer who is not signed in it asks them to sign in, and for Claude, the bot and the owner it is disabled with a note, because they cannot be started from here.
 _Avoid_: Wake, trigger, run now (the button says Work, the concept is Activate)
 
+**Task**:
+One job a CRM does on a schedule or on demand: a GitHub workflow in a CRM repo (a scan, a discovery, a report). Each task is one agent and stands on its CRM's island, with the CRM's website agent.
+_Avoid_: Job (GitHub's word for a group of steps inside one run), step
+
+**Progress**:
+How far the run a working task is in has got, as a percentage. Exact when the run reports its steps, otherwise an estimate from how long the task usually takes, shown with a "≈". A task that is not working has no progress; it shows its last result and when it runs next.
+_Avoid_: Completion, status
+
+**Analytics**:
+The figures drawn from a task's past runs (success rate, average duration, how long runs take over time, failure streaks) and, for a whole CRM, the same totals side by side with the other CRMs.
+_Avoid_: Stats, metrics, report
+
+**District**:
+A group of task agents on one island that do the same kind of job (news, contacts, competitors, research, reports), standing together.
+_Avoid_: Zone, cluster
+
+**Stuck**:
+A working task whose run has taken much longer than that task usually does. Shown amber first, then red.
+_Avoid_: Hung, frozen
+
+**Wake several**:
+Activating several tasks of one CRM in one go. At most three run together; the rest wait their turn.
+_Avoid_: Bulk run, batch
+
+**Personal choice**:
+A setting a visitor makes only for themselves (effects on or off, the feed open, and later colours, names, sound, the tour). Kept in that visitor's own browser, never sent anywhere and never seen by anyone else; the page works the same when the browser will not keep it.
+_Avoid_: Preference, setting (those suggest it is shared)
+
+**Custom colour**:
+The suit and helmet colours chosen for an agent by whoever is looking, in place of the colours its kind gives it. Kept in that person's own browser only.
+_Avoid_: Skin, theme
+
 **Admin**:
 The owner while signed in. Only the Admin can use the Work button for real; everyone else is asked to sign in.
 _Avoid_: User, viewer (a viewer is anyone who is not the Admin)
