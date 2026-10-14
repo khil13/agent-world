@@ -30,6 +30,7 @@ function progressBody(model) {
   if (p.step) line('Current step', p.step);
   if (p.stepsText) line('Steps', p.stepsText);
   if (p.finish) line('Estimated finish', p.finish.text, p.finish.late ? 'late' : '');
+  if (p.stuck) line('Warning', p.stuck === 'red' ? '⚠ Taking more than three times as long as usual' : '⚠ Taking more than twice as long as usual', `late ${p.stuck}`);
   if (p.note) box.append(el('p', 'note', p.note));
   return box;
 }

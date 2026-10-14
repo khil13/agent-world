@@ -29,9 +29,9 @@ function mix(r) {
 }
 
 export function renderList(root, world, state, on, now = Date.now()) {
-  const o = overview(world), live = world.islands.filter(i => !i.dormant).length;
+  const o = overview(world, now), live = world.islands.filter(i => !i.dormant).length;
   const head = el('div', 'sidehead'); head.append(el('span', '', 'OVERVIEW'), el('span', 'cnt', `${live} repos · ${world.agents.length} agents`));
-  const first = o.attention[0];
+  const first = o.attention.find(a => a.kind === 'failing');   // the failing tile jumps to the first failing agent
   const tiles = el('div', 'tiles');
   tiles.append(tile('working', o.totals.working, 'working'), tile('asleep', o.totals.asleep, 'asleep'), tile('failing', o.totals.failing, 'failing', first ? () => on.agent(first.id) : null));
   const verdict = el('p', `verdict ${o.verdict}`, verdictText(o));
@@ -42,7 +42,8 @@ export function renderList(root, world, state, on, now = Date.now()) {
     const att = el('ul', 'attn');
     for (const a of o.attention) {
       const row = el('li', `thread attn${state.selectedAgent === a.id ? ' on' : ''}`);
-      row.append(el('span', 'dot fail'), el('span', 'n', a.name), el('span', 'k', `${a.island}${a.date ? ' · ' + ago(a.date, now) : ''}`));
+      const why = a.kind === 'stuck' ? ` · taking longer than usual${a.level === 'red' ? ' (much)' : ''}` : a.date ? ' · ' + ago(a.date, now) : '';
+      row.append(el('span', a.kind === 'stuck' ? `dot stuck ${a.level}` : 'dot fail'), el('span', 'n', a.name), el('span', 'k', `${a.island}${why}`));
       row.title = `${a.name} · ${a.island}`;
       row.onclick = () => on.agent(a.id);
       att.append(row);

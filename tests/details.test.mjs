@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildWorld } from '../src/world.mjs';
-import { taskDetails, isTask, durationText } from '../src/details.mjs';
+import { taskDetails, isTask, durationText, finishText, cardStats } from '../src/details.mjs';
+import { progressBasis } from '../src/progress.mjs';
 
 const NOW = Date.parse('2026-10-02T12:00:00Z');   // a Friday
 const MIN = 60e3;
@@ -37,7 +38,7 @@ test('a running task with its steps: the overview names its step, the progress t
   assert.deepEqual(row(d, 'Latest run'), { label: 'Latest run', value: 'Open it on GitHub', href: 'https://example.test/now' });
   assert.equal(row(d, 'Next run'), undefined, 'a task that is working is not waiting for its next run');
   assert.deepEqual(d.progress, { mode: 'running', figure: { value: 37, exact: true, label: '37%' }, step: 'Fetch data', stepsText: '3 of 8 steps',
-    finish: { text: 'about Fri 12:03 (in 3 min)', late: false }, note: '' });
+    finish: { text: 'about Fri 12:03 (in 3 min)', late: false }, stuck: null, note: '' });
 });
 
 test('without steps the figure is an estimate, and there is no current step to name', () => {
@@ -159,4 +160,79 @@ test('the details hold only what the task\'s own data says: no description is wr
   const d = details(task('Contact finder', [finished(6)]));
   const text = JSON.stringify(d);
   assert.ok(!/description|about this task|purpose/i.test(text));
+});
+
+test('the progress tab warns when the run is taking much longer than usual, amber first and then red', () => {
+  const old = [finished(6), finished(6, 29), finished(6, 53)];
+  assert.equal(details(task('Contact finder', [going(3), ...old])).progress.stuck, null);
+  assert.equal(details(task('Contact finder', [going(13), ...old])).progress.stuck, 'amber');
+  assert.equal(details(task('Contact finder', [going(19), ...old])).progress.stuck, 'red');
+  assert.equal(details(task('Contact finder', [going(600), finished(6), finished(6, 29)])).progress.stuck, null, 'two finished runs are not enough to say');
+});
+
+test('a task that is not running has no stuck warning, whatever it did before', () => {
+  assert.equal(details(task('Contact finder', [finished(600), finished(6, 29), finished(6, 53), finished(6, 77)])).progress.stuck, null);
+  assert.equal(details(task('Contact finder', [finished(3, 2, { concl: 'failure' }), finished(6, 29)])).progress.stuck, null);
+});
+
+test('the finish text is the same wherever it is shown', () => {
+  const basis = progressBasis(going(3), [finished(6)]);
+  assert.deepEqual(finishText(basis, NOW, 'UTC'), { text: 'about Fri 12:03 (in 3 min)', late: false });
+  assert.deepEqual(finishText(progressBasis(going(10), [finished(6)]), NOW, 'UTC'), { text: 'taking longer than usual', late: true });
+  assert.equal(finishText(progressBasis(going(3), []), NOW, 'UTC'), null);
+  assert.equal(finishText(null, NOW, 'UTC'), null);
+  assert.deepEqual(details(task('Contact finder', [going(3), finished(6)])).progress.finish, finishText(progressBasis(going(3), [finished(6)]), NOW, 'UTC'));
+});
+
+// What the small card shows in its grid of figures, for every kind of agent.
+const stats = (a, now = NOW) => cardStats(a, now, 'UTC').map(s => [s.label, s.value, s.cls || '']);
+const labels = a => cardStats(a, NOW, 'UTC').map(s => s.label);
+
+test('a task that is asleep shows its last run, how it started and when it runs next', () => {
+  const a = agent(task('Contact finder', [finished(6, 5, { event: 'workflow_dispatch' }), finished(6, 29)]));
+  assert.deepEqual(stats(a), [['latest run', 'succeeded', ''], ['triggered by', 'workflow dispatch', ''], ['next run', 'in 18 h, Sat 06:00', 'wide']]);
+});
+
+test('a task that is running shows when it should finish, and not a next run', () => {
+  const a = agent(task('Contact finder', [going(3), finished(6), finished(6, 29)]));
+  assert.deepEqual(stats(a), [['latest run', 'running', ''], ['triggered by', 'schedule', ''], ['expected finish', 'about Fri 12:03 (in 3 min)', 'wide']]);
+});
+
+test('a run that has gone on too long shows that, in the late style', () => {
+  const a = agent(task('Contact finder', [going(10), finished(6), finished(6, 29)]));
+  assert.deepEqual(stats(a).at(-1), ['expected finish', 'taking longer than usual', 'wide late']);
+});
+
+test('a running task with nothing to compare with has no finish line, and a queued one the same', () => {
+  assert.deepEqual(labels(agent(task('Contact finder', [going(3)]))), ['latest run', 'triggered by']);
+  assert.deepEqual(labels(agent(task('Contact finder', [{ status: 'queued', concl: null, date: minAgo(1), event: 'schedule' }, finished(6)]))), ['latest run', 'triggered by']);
+});
+
+test('a disabled task says Disabled where the next run would be', () => {
+  assert.deepEqual(stats(agent(task('Contact finder', [finished(6)], { enabled: false }))).at(-1), ['next run', 'Disabled', 'wide']);
+});
+
+test('a task that has never run shows only when it runs next', () => {
+  assert.deepEqual(stats(agent({ name: 'Contact finder', enabled: true, schedule: ['0 6 * * *'] })), [['next run', 'in 18 h, Sat 06:00', 'wide']]);
+  assert.deepEqual(stats(agent({ name: 'Contact finder', enabled: true })), [['next run', 'schedule unknown', 'wide']]);
+});
+
+test('a workflow of a published repo shows its run and how it started, and nothing about commits or next runs', () => {
+  const repo = { name: 'r', full: 'me/r', desc: '', url: 'https://github.com/me/r', home: '', lang: 'JS', pushed: iso(1), priv: false, issues: 0, prs: '—', commits: [],
+    workflows: [{ name: 'Scan', status: 'completed', concl: 'success', date: iso(1), url: 'u', event: 'schedule' }] };
+  const a = buildWorld({ repos: [repo] }, { localAgents: [] }, NOW, {}).agents.find(x => x.name === 'Scan');
+  assert.deepEqual(stats(a), [['latest run', 'succeeded', ''], ['triggered by', 'schedule', '']]);
+});
+
+test('a builder or a person shows when they last committed and how many commits there were', () => {
+  const repo = { name: 'r', full: 'me/r', desc: '', url: 'https://github.com/me/r', home: '', lang: 'JS', pushed: iso(1), priv: false, issues: 0, prs: '—', workflows: [],
+    commits: [{ sha: 'abc1234', msg: 'a change', date: iso(2), author: 'x', url: 'u', who: 'you', ai: false }, { sha: 'def5678', msg: 'another', date: iso(9), author: 'x', url: 'u', who: 'you', ai: false }] };
+  const a = buildWorld({ repos: [repo] }, { localAgents: [] }, NOW, {}).agents.find(x => x.kind === 'human');
+  assert.deepEqual(stats(a), [['last commit', '2h ago', ''], ['commits · 8w', '2', '']]);
+});
+
+test('agents that have their own cards (a website, a Cowork agent) have no figures from here', () => {
+  const w = buildWorld({ repos: [] }, { localAgents: [{ name: 'Watcher', repo: null, schedule: 'Daily', status: 'scheduled' }], sites: SITES }, NOW, {});
+  assert.deepEqual(cardStats(w.agents.find(a => a.kind === 'site'), NOW, 'UTC'), []);
+  assert.deepEqual(cardStats(w.agents.find(a => a.kind === 'local'), NOW, 'UTC'), []);
 });

@@ -26,7 +26,9 @@ export function demoTasks(now = Date.now()) {
     const withRuns = (latest, older = history(i)) => ({ ...base, ...latest, runs: [latest, ...older] });
     switch (state) {
       case 'running': {
-        const latest = { status: 'in_progress', concl: null, date: ago(2 + (i % 4)), event: 'schedule' };
+        // an estimated run is taking longer than usual on two islands: more than twice as long on one (amber), more than three times on another (red)
+        const late = v === 1 && n < 2 ? usual(i) * (n === 0 ? 2.4 : 3.5) : 0;
+        const latest = { status: 'in_progress', concl: null, date: ago(late || 2 + (i % 4)), event: 'schedule' };
         if (v === 0) { const done = 2 + (i % 5); return withRuns({ ...latest, steps: { done, total: 8, current: 'Demo step ' + (done + 1) } }); }   // exact: the run reports its steps
         return withRuns(latest, v === 1 ? history(i) : []);                                    // an estimate, or no figure at all (no past runs)
       }

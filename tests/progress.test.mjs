@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { typicalMs, progressBasis, progressAt, progressLabel, finishAt } from '../src/progress.mjs';
+import { typicalMs, progressBasis, progressAt, progressLabel, finishAt, stuckAt } from '../src/progress.mjs';
 
 const MIN = 60e3;
 const T0 = Date.parse('2026-10-02T12:00:00Z');
@@ -114,4 +114,45 @@ test('there is no finish time without a past run to compare with, and none for a
   assert.equal(finishAt(progressBasis(failed(3), [ok(6)]), T0), null);
   assert.equal(finishAt(null, T0), null);
   assert.equal(finishAt(progressBasis(going(3), [ok(6)]), NaN), null);
+});
+
+test('a run that has gone on more than twice its usual time is amber, and more than three times red', () => {
+  const history = [ok(6), ok(6), ok(6)];   // usually 6 minutes
+  const at = startedMinutesAgo => stuckAt(progressBasis(going(startedMinutesAgo), history), T0);
+  assert.equal(at(3), null);
+  assert.equal(at(11), null);
+  assert.equal(at(12), null, 'twice the usual time is not yet past it');
+  assert.equal(at(13), 'amber');
+  assert.equal(at(18), 'amber', 'three times is not yet past it either');
+  assert.equal(at(19), 'red');
+  assert.equal(at(600), 'red');
+});
+
+test('a task with fewer than three finished runs to compare with never raises a stuck warning', () => {
+  for (const history of [[], [ok(6)], [ok(6), ok(6)]]) assert.equal(stuckAt(progressBasis(going(600), history), T0), null, `${history.length} runs`);
+  assert.equal(stuckAt(progressBasis(going(600), [ok(6), ok(6), failed(6)]), T0), null, 'a run that failed says nothing about how long it usually takes');
+  assert.equal(stuckAt(progressBasis(going(600), [ok(6), ok(6), { status: 'completed', concl: 'cancelled', ms: 6 * MIN }]), T0), null);
+  assert.equal(stuckAt(progressBasis(going(600), [ok(6), ok(6), ok(6, { ms: undefined })]), T0), null, 'a run with no duration does not count');
+  assert.equal(stuckAt(progressBasis(going(600), [ok(6), ok(6), ok(6)]), T0), 'red');
+});
+
+test('the usual time comes from the last ten runs, so one very old slow run does not hide a stuck one', () => {
+  const history = [...Array.from({ length: 10 }, () => ok(6)), ok(600), ok(600)];
+  assert.equal(stuckAt(progressBasis(going(13), history), T0), 'amber');
+});
+
+test('only a run that is going can be stuck: not a queued one, a finished one, a task with nothing to compare, or an unreadable clock', () => {
+  const history = [ok(6), ok(6), ok(6)];
+  assert.equal(stuckAt(progressBasis({ status: 'queued', concl: null, date: at(600) }, history), T0), null);
+  assert.equal(stuckAt(progressBasis(ok(600), history), T0), null);
+  assert.equal(stuckAt(progressBasis(failed(600), history), T0), null);
+  assert.equal(stuckAt(null, T0), null);
+  assert.equal(stuckAt(progressBasis(going(600), history), NaN), null);
+  assert.equal(stuckAt(progressBasis({ status: 'in_progress', concl: null, date: 'not a date' }, history), T0), null);
+});
+
+test('reporting its steps does not stop a run being stuck: the time is what counts', () => {
+  const basis = progressBasis(going(30, { steps: { done: 3, total: 8 } }), [ok(6), ok(6), ok(6)]);
+  assert.equal(stuckAt(basis, T0), 'red');
+  assert.deepEqual(progressAt(basis, T0), { value: 37, exact: true }, 'and the figure is still the exact one');
 });

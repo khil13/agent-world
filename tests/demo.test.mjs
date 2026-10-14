@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { demoTasks, DEMO_ISLANDS } from '../src/demo.mjs';
 import { buildWorld } from '../src/world.mjs';
 import { CONFIG } from '../src/config.mjs';
-import { progressAt } from '../src/progress.mjs';
+import { progressAt, stuckAt } from '../src/progress.mjs';
 import { nextRunOf, describeNextRun } from '../src/schedule.mjs';
 
 const NOW = Date.parse('2026-10-02T12:00:00Z');
@@ -97,4 +97,13 @@ test('a demo run that reports its steps also names the step it is on, with an in
   const exact = w.agents.filter(a => a.demo && a.status === 'running' && a.details.progress?.steps);
   assert.ok(exact.length >= 2);
   for (const a of exact) assert.match(a.details.progress.step, /^Demo step \d+$/, a.name);
+});
+
+test('some demo runs are taking longer than usual, amber on one island and red on another, and each has enough history to say so', () => {
+  const w = buildWorld({ repos: [] }, CONFIG, NOW, { tasks: demoTasks(NOW) });
+  const stuck = w.agents.filter(a => a.demo && stuckAt(a.details.progress, NOW));
+  assert.deepEqual(new Set(stuck.map(a => stuckAt(a.details.progress, NOW))), new Set(['amber', 'red']));
+  assert.ok(new Set(stuck.map(a => a.island)).size >= 2, 'on more than one island');
+  for (const a of stuck) assert.ok(a.details.progress.samples >= 3, a.name);
+  assert.ok(w.agents.filter(a => a.demo && a.status === 'running' && !stuckAt(a.details.progress, NOW)).length >= 3, 'and other running tasks are not');
 });

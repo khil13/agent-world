@@ -85,6 +85,14 @@ ago, how each started, how long it took and a link). Everything comes from the t
 written by hand. The drawer follows the selected task, closes with its × or Escape, and is a sheet at the bottom on a narrow
 screen. Only https links are shown.
 
+A run that is going has an **expected finish**: when it started plus how long the task usually takes (the median of its last
+ten successful runs), shown on the card and in the drawer, or "taking longer than usual" once that time has passed. A run that
+has gone on **more than twice** its usual time turns **amber** and one past **three times** turns **red**: its bar over the
+astronaut, a chip on the card, a warning in the drawer, and a line in the Overview's attention list (the task still counts as
+working). Only a task with at least three finished runs to compare with can be called stuck, so a new task never raises a false
+alarm (`stuckAt` in `src/progress.mjs`, pure). What the small card's grid of figures shows for each kind of agent is also built
+by a pure, tested function (`cardStats` in `src/details.mjs`).
+
 ## Colours
 
 Every astronaut has the suit and helmet colours its kind gives it, and anyone can choose others for any agent: the **Colours**

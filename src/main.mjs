@@ -14,7 +14,7 @@ import { offerFor } from './activation.mjs';
 import { createRequests } from './requests.mjs';
 import { personal } from './personal.mjs';
 import { demoTasks } from './demo.mjs';
-import { progressAt, progressLabel } from './progress.mjs';
+import { progressAt, progressLabel, stuckAt } from './progress.mjs';
 import { taskDetails, isTask } from './details.mjs';
 import { renderDrawer } from './drawer.mjs';
 import { cleanColours, choiceOf, setColour, resetColour, applyToIsland } from './colours.mjs';
@@ -207,7 +207,7 @@ async function refresh() {
 
 // ----- progress: a small bar over each working task astronaut, and the open card's bar, kept moving between refreshes
 const progressBars = new Map();   // working task agent id -> its floating bar
-let lastProgressSecond = -1;
+let lastProgressSecond = -1, lastStuck = null;   // lastStuck: which runs were stuck at the last look, so the Overview and card are redrawn when that changes
 function syncProgressBars(w) {
   for (const e of progressBars.values()) e.remove();
   progressBars.clear();
@@ -215,7 +215,7 @@ function syncProgressBars(w) {
     if (a.status !== 'running' || !a.details?.progress || a.details.progress.state === 'queued') continue;   // a queued run never has a figure
     const e = el('div', 'pbar'), track = el('b'); track.append(el('i')); e.append(track, el('span')); labels.append(e); progressBars.set(a.id, e);
   }
-  lastProgressSecond = -1;
+  lastProgressSecond = -1; lastStuck = null;
 }
 function updateProgress(t) {
   const second = Math.floor(t);
@@ -224,9 +224,13 @@ function updateProgress(t) {
   const now = Date.now(), byId = new Map(state.world.agents.map(a => [a.id, a]));
   for (const [id, e] of progressBars) {
     const p = progressAt(byId.get(id)?.details.progress, now);
-    e.classList.toggle('none', !p); e.classList.toggle('est', !!p && !p.exact);
-    if (p) { e.firstChild.firstChild.style.width = `${p.value}%`; e.lastChild.textContent = progressLabel(p); }
+    const st = stuckAt(byId.get(id)?.details.progress, now);   // a run taking much longer than usual: its bar turns amber, then red
+    e.classList.toggle('none', !p); e.classList.toggle('est', !!p && !p.exact); e.classList.toggle('amber', st === 'amber'); e.classList.toggle('red', st === 'red');
+    if (p) { e.firstChild.firstChild.style.width = `${p.value}%`; e.lastChild.textContent = (st ? '⚠ ' : '') + progressLabel(p); }
   }
+  const stuckNow = state.world.agents.map(a => (a.status === 'running' ? stuckAt(a.details?.progress, now) || '-' : '-')).join('');
+  if (lastStuck !== null && stuckNow !== lastStuck) { lastStuck = stuckNow; refreshUi(); return; }   // a run has crossed a limit: the Overview and the card say so
+  lastStuck = stuckNow;
   const sel = byId.get(state.selectedAgent);
   if (sel && 'progress' in (sel.details || {})) {
     const p = progressAt(sel.details.progress, now), fill = card.querySelector('.bar.known i'), pct = card.querySelector('.pct');

@@ -72,8 +72,12 @@ _Avoid_: Due, ETA (an ETA is when a run that is going will finish)
 The drawer a task's card opens with its **Details** button: an Overview, the Progress of the run that is going, and the History of recent runs, all taken from the task's own data and never written by hand.
 _Avoid_: Panel (that is the card or the list on the right), modal
 
+**Expected finish**:
+When a running task should finish: when it started plus how long it usually takes. Once that time has passed it says "taking longer than usual" instead of a time.
+_Avoid_: ETA, deadline
+
 **Stuck**:
-A working task whose run has taken much longer than that task usually does. Shown amber first, then red.
+A working task whose run has taken much longer than that task usually does: more than twice as long is amber, more than three times is red. Only a task with at least three finished runs to compare with can be stuck. It still counts as working, and it is listed under what needs attention.
 _Avoid_: Hung, frozen
 
 **Wake several**:

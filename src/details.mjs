@@ -1,7 +1,7 @@
 // What the details drawer shows for a task: three tabs of rows built from the task's own data (nothing is written by hand
 // about any task), as plain data so it can be tested without a browser. The drawer in drawer.mjs only draws it.
 import { ago, relative, clock } from './timewords.mjs';
-import { progressAt, progressLabel, finishAt } from './progress.mjs';
+import { progressAt, progressLabel, finishAt, stuckAt } from './progress.mjs';
 import { describeNextRun } from './schedule.mjs';
 
 export const STATUS_WORD = { running: 'Working', ok: 'Healthy', fail: 'Failed', idle: 'Idle', asleep: 'Scheduled' };
@@ -23,19 +23,42 @@ export function durationText(ms) {
   return `${h} h${m % 60 ? ` ${m % 60} min` : ''}`;
 }
 
+// When a running task is expected to finish, in words: { text, late }, or null when there is nothing to base an estimate on.
+export function finishText(basis, now, timeZone) {
+  const end = finishAt(basis, now);
+  if (!end) return null;
+  return end.late ? { text: 'taking longer than usual', late: true } : { text: `about ${clock(end.at, timeZone)} (${relative(end.at - now)})`, late: false };
+}
+
+// The figures in the grid of the small card, as { value, label, cls? } for the kinds of agent that have one: a workflow (its last
+// run and how it started; for a task also when the run that is going should finish, or when it runs next) and a builder or a
+// person (their last commit and how many there were). A website and a Cowork agent have their own cards and no figures from here.
+export function cardStats(agent, now, timeZone) {
+  const d = agent.details || {}, latest = d.latest, stats = [];
+  if (agent.kind === 'workflow') {
+    if (latest) stats.push({ value: latest.result, label: 'latest run' }, { value: (latest.event || '—').replace(/_/g, ' '), label: 'triggered by' });
+    if (isTask(agent) && agent.status === 'running') {
+      const finish = finishText(d.progress, now, timeZone);
+      if (finish) stats.push({ value: finish.text, label: 'expected finish', cls: finish.late ? 'wide late' : 'wide' });
+    } else if (isTask(agent)) stats.push({ value: describeNextRun({ enabled: !agent.disabled, schedule: d.schedule }, now, timeZone), label: 'next run', cls: 'wide' });
+  } else if (latest && (agent.kind === 'builder' || agent.kind === 'human')) {
+    stats.push({ value: ago(latest.date, now), label: 'last commit' }, { value: String(d.count ?? (d.recent || []).length), label: 'commits · 8w' });
+  }
+  return stats;
+}
+
 function progressTab(agent, now, timeZone) {
   const d = agent.details, basis = d.progress, figure = progressAt(basis, now);
   const shown = figure && { ...figure, label: progressLabel(figure) };
-  if (agent.disabled) return { mode: 'none', figure: null, step: null, stepsText: null, finish: null, note: 'This task is switched off.' };
-  if (!basis) return { mode: 'none', figure: null, step: null, stepsText: null, finish: null, note: 'This task has not run yet.' };
-  if (basis.state === 'queued') return { mode: 'queued', figure: null, step: null, stepsText: null, finish: null, note: 'Waiting for GitHub to start it.' };
+  const none = { step: null, stepsText: null, finish: null, stuck: null };
+  if (agent.disabled) return { mode: 'none', figure: null, ...none, note: 'This task is switched off.' };
+  if (!basis) return { mode: 'none', figure: null, ...none, note: 'This task has not run yet.' };
+  if (basis.state === 'queued') return { mode: 'queued', figure: null, ...none, note: 'Waiting for GitHub to start it.' };
   if (basis.state === 'running') {
-    const end = finishAt(basis, now);
     return { mode: 'running', figure: shown, step: basis.step, stepsText: basis.steps ? `${basis.steps.done} of ${basis.steps.total} steps` : null,
-      finish: !end ? null : end.late ? { text: 'taking longer than usual', late: true } : { text: `about ${clock(end.at, timeZone)} (${relative(end.at - now)})`, late: false },
-      note: shown ? '' : 'No figure yet: this task has no finished runs to compare with.' };
+      finish: finishText(basis, now, timeZone), stuck: stuckAt(basis, now), note: shown ? '' : 'No figure yet: this task has no finished runs to compare with.' };
   }
-  return { mode: 'finished', figure: shown, step: null, stepsText: null, finish: null,
+  return { mode: 'finished', figure: shown, ...none,
     note: basis.state === 'done' ? 'The last run finished.' : shown ? `The last run stopped at ${shown.label}.` : 'The last run stopped, and there is not enough to say where.' };
 }
 

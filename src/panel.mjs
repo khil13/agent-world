@@ -1,10 +1,9 @@
 // The card that pops up over a clicked agent, like the one in the reference: avatar, title, a status chip
 // and progress bar, an Open button, then the details. Built with DOM calls and textContent, never
 // innerHTML, because commit messages and workflow names are text from outside this page.
-import { progressAt, progressLabel } from './progress.mjs';
-import { describeNextRun } from './schedule.mjs';
+import { progressAt, progressLabel, stuckAt } from './progress.mjs';
 import { ago } from './timewords.mjs';
-import { isTask, statusWord, safeUrl } from './details.mjs';
+import { isTask, statusWord, safeUrl, cardStats } from './details.mjs';
 import { SWATCHES } from './colours.mjs';
 
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -54,10 +53,10 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
   const chips = el('div', 'chips'), chip = el('span', `chip ${agent.status}`);
   chip.append(el('span', `dot ${agent.status}`), agent.kind === 'site' ? SITE_WORD[agent.status] || agent.status : statusWord(agent));
   const task = isTask(agent);   // only tasks carry progress and a schedule
-  const prog = task ? progressAt(d.progress, now) : null;
-  const nextRun = task && agent.status !== 'running' ? describeNextRun({ enabled: !agent.disabled, schedule: d.schedule }, now) : null;   // in the viewer's own time
+  const prog = task ? progressAt(d.progress, now) : null, stuck = task && agent.status === 'running' ? stuckAt(d.progress, now) : null;
   chips.append(chip, el('span', 'when', when));
   if (prog) chips.append(el('span', 'pct', progressLabel(prog)));
+  if (stuck) chips.append(el('span', `chip stuck ${stuck}`, stuck === 'red' ? '⚠ Much longer than usual' : '⚠ Longer than usual'));
   titles.append(chips);
   const x = el('button', 'x', '×'); x.setAttribute('aria-label', 'Close'); x.onclick = onClose;
   top.append(face, titles, x);
@@ -112,13 +111,10 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
     const grid = el('div', 'stats'); grid.append(stat(d.schedule || '—', 'schedule'));
     body.append(grid, el('p', 'note', d.note));
   } else if (agent.kind === 'workflow' && !d.latest) {
-    const grid = el('div', 'stats'); if (nextRun) grid.append(stat(nextRun, 'next run', 'wide'));
+    const grid = el('div', 'stats'); for (const s of cardStats(agent, now)) grid.append(stat(s.value, s.label, s.cls));
     body.append(el('p', 'note', agent.disabled ? 'This task is switched off.' : 'This task has not run yet.'), grid);
   } else if (d.latest) {
-    const grid = el('div', 'stats');
-    if (agent.kind === 'workflow') grid.append(stat(d.latest.result, 'latest run'), stat((d.latest.event || '—').replace(/_/g, ' '), 'triggered by'));
-    if (nextRun) grid.append(stat(nextRun, 'next run', 'wide'));
-    else grid.append(stat(ago(d.latest.date, now), 'last commit'), stat(String(d.count ?? d.recent.length), 'commits · 8w'));
+    const grid = el('div', 'stats'); for (const s of cardStats(agent, now)) grid.append(stat(s.value, s.label, s.cls));
     body.append(grid, el('div', 'sec', agent.kind === 'workflow' ? 'Recent runs' : 'Recent commits'));
     const list = el('ul', 'runs');
     for (const it of d.recent) {
