@@ -11,16 +11,17 @@ const STATES = ['ok', 'ok', 'running', 'ok', 'fail', 'ok', 'queued', 'ok', 'disa
 
 export function demoTasks(now = Date.now()) {
   const ago = minutes => new Date(now - minutes * 60e3).toISOString();
+  const someHoursAgo = i => ago(60 * (1 + (i * 7) % 20));   // a different time for each task, within the last day
   const make = (name, state, i) => {
     const base = { name, enabled: true, demo: true };
     switch (state) {
       case 'running': return { ...base, status: 'in_progress', concl: null, date: ago(5 + i), event: 'schedule' };
       case 'queued': return { ...base, status: 'queued', concl: null, date: ago(1), event: 'schedule' };
-      case 'fail': return { ...base, status: 'completed', concl: 'failure', date: ago(60 * (1 + (i * 7) % 20)), event: 'schedule' };
-      case 'cancelled': return { ...base, status: 'completed', concl: 'cancelled', date: ago(60 * (1 + (i * 7) % 20)), event: 'workflow_dispatch' };
+      case 'fail': return { ...base, status: 'completed', concl: 'failure', date: someHoursAgo(i), event: 'schedule' };
+      case 'cancelled': return { ...base, status: 'completed', concl: 'cancelled', date: someHoursAgo(i), event: 'workflow_dispatch' };
       case 'disabled': return { ...base, enabled: false, status: 'completed', concl: 'success', date: ago(60 * 72), event: 'schedule' };
       case 'never': return base;
-      default: return { ...base, status: 'completed', concl: 'success', date: ago(60 * (1 + (i * 7) % 20)), event: 'schedule' };
+      default: return { ...base, status: 'completed', concl: 'success', date: someHoursAgo(i), event: 'schedule' };
     }
   };
   return Object.fromEntries(DEMO_ISLANDS.map((island, n) => [island, NAMES.map((name, i) => make('Demo ' + name, STATES[(i + 4 * n) % STATES.length], i))]));
