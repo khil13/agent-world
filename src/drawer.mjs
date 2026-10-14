@@ -49,6 +49,8 @@ function historyBody(model) {
 
 // Draws `model` (from taskDetails) into `root`, or empties and hides it when there is none.
 export function renderDrawer(root, model, { tab = 'overview', onTab = () => {}, onClose = () => {} } = {}) {
+  const sameTab = root.querySelector('.dtabs .on')?.textContent === (TABS.find(t => t[0] === tab) || [])[1];
+  const scrolled = sameTab ? root.querySelector('.dbody')?.scrollTop || 0 : 0;   // a redraw keeps the reader's place
   root.replaceChildren();
   root.hidden = !model;
   if (!model) return;
@@ -64,4 +66,5 @@ export function renderDrawer(root, model, { tab = 'overview', onTab = () => {}, 
   const body = el('div', 'dbody');
   body.append(tab === 'progress' ? progressBody(model) : tab === 'history' ? historyBody(model) : overviewBody(model));
   root.append(head, tabs, body);
+  body.scrollTop = scrolled;
 }

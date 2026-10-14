@@ -4,7 +4,7 @@
 import { progressAt, progressLabel } from './progress.mjs';
 import { describeNextRun } from './schedule.mjs';
 import { ago } from './timewords.mjs';
-import { isTask, STATUS_WORD, safeUrl } from './details.mjs';
+import { isTask, statusWord, safeUrl } from './details.mjs';
 
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const link = (text, url, cls) => { const a = el('a', cls, text); a.href = url; a.target = '_blank'; a.rel = 'noopener'; return a; };
@@ -26,7 +26,7 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
   const titles = el('div', 'titles');
   titles.append(el('h2', '', agent.kind === 'site' ? `${agent.island} website` : agent.name));
   const chips = el('div', 'chips'), chip = el('span', `chip ${agent.status}`);
-  chip.append(el('span', `dot ${agent.status}`), agent.disabled ? 'Disabled' : d.queued ? 'Queued' : (agent.kind === 'site' ? SITE_WORD : STATUS_WORD)[agent.status] || agent.status);
+  chip.append(el('span', `dot ${agent.status}`), agent.kind === 'site' ? SITE_WORD[agent.status] || agent.status : statusWord(agent));
   const task = isTask(agent);   // only tasks carry progress and a schedule
   const prog = task ? progressAt(d.progress, now) : null;
   const nextRun = task && agent.status !== 'running' ? describeNextRun({ enabled: !agent.disabled, schedule: d.schedule }, now) : null;   // in the viewer's own time

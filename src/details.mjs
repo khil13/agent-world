@@ -9,6 +9,9 @@ const HOW = { schedule: 'on schedule', workflow_dispatch: 'started by hand', pus
 export const safeUrl = u => (typeof u === 'string' && /^https:\/\//.test(u) ? u : null);
 const going = r => r === 'running' || r === 'queued';   // a run that has not finished
 
+// The word for a task's state: Disabled and Queued win over the usual word for its status.
+export const statusWord = agent => (agent.disabled ? 'Disabled' : agent.details?.queued ? 'Queued' : STATUS_WORD[agent.status] || agent.status);
+
 export const isTask = agent => !!agent && agent.kind === 'workflow' && 'progress' in (agent.details || {});
 
 // How long a run took, in plain words: "45 s", "6 min 12 s", "1 h 5 min". null when it is not known.
@@ -41,7 +44,7 @@ export function taskDetails(agent, now, timeZone) {
   if (!isTask(agent)) return null;
   const d = agent.details, latest = d.latest, working = agent.status === 'running';
   const lastDone = (d.recent || []).find(r => !going(r.result));   // the last run that has finished, which is not always the latest
-  const status = agent.disabled ? 'Disabled' : d.queued ? 'Queued' : STATUS_WORD[agent.status] || agent.status;
+  const status = statusWord(agent);
   const schedule = !Array.isArray(d.schedule) ? 'unknown' : d.schedule.length ? `UTC: ${d.schedule.map(s => s || '?').join(' · ')}` : 'none: runs only when started';
   const overview = [
     { label: 'Task', value: agent.name },
