@@ -10,6 +10,7 @@ import { baseFor } from './bases.mjs';
 import { createPost } from './post.mjs';
 import { addBlob } from './grounding.mjs';
 import { tileOffsets, TILE, crowdLook } from './world.mjs';
+import { DISTRICT_TINT } from './districts.mjs';
 import { pose, hash, errand, workCycle } from './anim.mjs';
 
 const WALK_UNITS = 0.5 / 14;          // pose offsets are in old pixel units; this turns them into tiles
@@ -210,6 +211,7 @@ export function createScene(container, { fx = null, onFxAuto = () => {}, onConte
     const decor = scatterDecor(world, tileOffsets, TILE * 1.4);
     decor.forEach(d => root.add(d));
 
+    const spots = [];   // a ring in its district's colour under each task astronaut, so a district can be seen from afar
     for (const a of world.agents) {
       const isl = world.islands.find(i => i.name === a.island), ph = hash(a.id);
       const k = isl.scale, look = crowdLook(k), front = FRONT * look.front, astro = ASTRO * look.astro;   // a crowded island: smaller, flatter buildings and the astronaut right in front
@@ -218,6 +220,7 @@ export function createScene(container, { fx = null, onFxAuto = () => {}, onConte
       building.scale.set(BUILD * k, BUILD * k * look.flat, BUILD * k);   // chunky, like the reference; flatter on a crowded island so it hides nobody
       building.userData.agentId = a.id; addBlob(building, 0.72, 0.05, 0.55);
       const robot = buildRobot(a.kind, a.name, a.disabled); robot.position.set(a.pos.x, 0.14, a.pos.z + front);
+      if (DISTRICT_TINT[a.district] !== undefined) spots.push([a.pos.x, a.pos.z + front, astro * 0.36, DISTRICT_TINT[a.district]]);
       robot.scale.setScalar(astro); robot.rotation.order = 'YXZ'; robot.userData.agentId = a.id; addBlob(robot, 0.2, 0.05, 0.55);
       const carry = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshStandardMaterial({ color: PALETTE.orange, roughness: 0.45 }));
       carry.position.set(0, 0.45, 0.24); carry.visible = false; robot.add(carry);
@@ -231,6 +234,12 @@ export function createScene(container, { fx = null, onFxAuto = () => {}, onConte
       root.add(building, robot); S.pickables.push(building, robot);
       S.agents.set(a.id, { agent: a, building, robot, carry, sparks, halo, bx: a.pos.x, bz: a.pos.z + front, front, astro, k, ph, alarm, icon, zs, island: isl,
         hq: { x: isl.x + (dx / len) * 5.6, z: isl.z + (dz / len) * 5.6 } });
+    }
+
+    if (spots.length) {
+      const rings = new THREE.InstancedMesh(new THREE.RingGeometry(0.62, 0.92, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.95 }), spots.length), m = new THREE.Matrix4(), c = new THREE.Color();
+      spots.forEach(([x, z, s, col], i) => { m.compose(new THREE.Vector3(x, 0.19, z), new THREE.Quaternion(), new THREE.Vector3(s, 1, s)); rings.setMatrixAt(i, m); rings.setColorAt(i, c.set(col)); });
+      root.add(rings);
     }
 
     // the buildings never move, so their shared-material parts are merged across the whole world (see bakeStatics)

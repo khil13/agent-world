@@ -61,7 +61,7 @@ The figures drawn from a task's past runs (success rate, average duration, how l
 _Avoid_: Stats, metrics, report
 
 **District**:
-A group of task agents on one island that do the same kind of job (news, contacts, competitors, research, reports), standing together.
+A group of task agents on one island that do the same kind of job (news, contacts, competitors, research, reports, or Other when the name fits none), standing together under rings of the district's colour. The kind is read from the words of the task's name.
 _Avoid_: Zone, cluster
 
 **Stuck**:

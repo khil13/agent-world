@@ -4,6 +4,7 @@
 // Positions are on the ground plane (x, z) in tile sizes; a tile is a hexagon with circumradius 1.
 import { siteStatus, siteLatest } from './sites.mjs';
 import { progressBasis } from './progress.mjs';
+import { districtOf, districtRank } from './districts.mjs';
 const DAY = 864e5;
 const DORMANT_DAYS = 30;     // matches the agent-hq legend: dormant = quiet for more than 30 days
 const RUNNING_WINDOW = 30 * 60e3;   // a commit this fresh means the committer is working right now
@@ -62,11 +63,12 @@ function agentsOf(r, localAgents, now, skip) {
 const taskStatus = t => (t.enabled === false || !t.status ? 'idle' : runStatus(t));
 function taskAgents(island, tasks) {
   const seen = new Set(['Website']), out = [];   // a task never takes the website agent's name, nor another task's
-  for (const t of (Array.isArray(tasks) ? tasks : []).filter(x => x && typeof x.name === 'string' && x.name).sort(byName)) {
+  const valid = (Array.isArray(tasks) ? tasks : []).filter(x => x && typeof x.name === 'string' && x.name);
+  for (const t of valid.sort((a, b) => districtRank(a.name) - districtRank(b.name) || byName(a, b))) {   // by district, so each district stands together
     if (seen.has(t.name)) continue;
     seen.add(t.name);
     const runs = t.runs && t.runs.length ? t.runs : t.status ? [t] : [];
-    out.push({ id: `${island}::${t.name}`, name: t.name, kind: 'workflow', status: taskStatus(t), repo: t.repo || null, url: t.url || null,
+    out.push({ id: `${island}::${t.name}`, name: t.name, kind: 'workflow', status: taskStatus(t), repo: t.repo || null, url: t.url || null, district: districtOf(t.name),
       ...(t.demo ? { demo: true } : {}), ...(t.enabled === false ? { disabled: true } : {}),
       details: { latest: runs.length ? runDetail(runs[0]) : null, recent: runs.slice(0, RECENT).map(runDetail), ...(t.enabled !== false && t.status === 'queued' ? { queued: true } : {}),
         progress: t.enabled === false || !runs.length ? null : progressBasis(runs[0], runs.slice(1)) } });   // read at any moment with progressAt

@@ -144,3 +144,32 @@ test('workflows of a published repo have no progress: it belongs to tasks', () =
   const w = buildWorld({ repos: [repo] }, { localAgents: [] }, NOW, {});
   assert.equal('progress' in w.agents.find(a => a.name === 'Scan').details, false);
 });
+
+test('tasks stand together by district, in the fixed order of the districts and by name inside each, after the website', () => {
+  const names = ['z news', 'a contact', 'b report', 'm other', 'a news', 'c competitor', 'r research'];
+  const w = world({ 'NL CRM': names.map(n => task(n)) });
+  assert.deepEqual(on(w, 'NL CRM').map(a => a.name), ['Website', 'a news', 'z news', 'a contact', 'c competitor', 'r research', 'b report', 'm other']);
+  assert.deepEqual(on(w, 'NL CRM').map(a => a.district), [undefined, 'News', 'News', 'Contacts', 'Competitors', 'Research', 'Reports', 'Other']);
+});
+
+test('every task carries its district, and the website and published workflows do not', () => {
+  const w = world({ 'NL CRM': [task('Daily news scan'), task('Backup')] });
+  assert.equal(on(w, 'NL CRM').find(a => a.name === 'Daily news scan').district, 'News');
+  assert.equal(on(w, 'NL CRM').find(a => a.name === 'Backup').district, 'Other');
+  assert.equal('district' in on(w, 'NL CRM').find(a => a.kind === 'site'), false);
+  const repo = { name: 'r', full: 'me/r', desc: '', url: 'https://github.com/me/r', home: '', lang: 'JS', pushed: iso(1), priv: false, issues: 0, prs: '—', commits: [],
+    workflows: [{ name: 'Daily news scan', status: 'completed', concl: 'success', date: iso(1), url: 'u', event: 'schedule' }] };
+  assert.equal('district' in buildWorld({ repos: [repo] }, { localAgents: [] }, NOW, {}).agents.find(a => a.name === 'Daily news scan'), false);
+});
+
+test('districts change who stands next to whom but not how many stand on the island, nor where tiles are', () => {
+  const names = Array.from({ length: 15 }, (_, i) => ['news', 'contact', 'competitor', 'research', 'report'][i % 5] + ' ' + i);
+  const w = world({ 'NL CRM': names.map(n => task(n)), 'DK CRM': [], 'CRM landing': [] });
+  const nl = w.islands.find(i => i.name === 'NL CRM'), mine = on(w, 'NL CRM');
+  assert.equal(mine.length, 16);
+  assert.equal(new Set(mine.map(a => `${a.pos.x},${a.pos.z}`)).size, 16, 'still one astronaut to a tile');
+  const order = mine.slice(1).map(a => a.district);
+  assert.ok(order.every(Boolean), 'every task has a district');
+  assert.deepEqual(order, [...order].sort((a, b) => ['News', 'Contacts', 'Competitors', 'Research', 'Reports'].indexOf(a) - ['News', 'Contacts', 'Competitors', 'Research', 'Reports'].indexOf(b)), 'each district is one unbroken run');
+  assert.ok(nl.agentCount === 16);
+});

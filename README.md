@@ -67,6 +67,11 @@ run ends) and an estimate, shown with a "≈", otherwise: the time so far out of
 runs, held at 95. With nothing to base a figure on (no steps, no past runs) no number is shown, only a sweeping bar. A task whose
 run stopped early keeps the figure it had reached, in red.
 
+Tasks stand together in **districts** by kind of job: news, contacts, competitors, research, reports, and Other for a name that
+fits none (`src/districts.mjs`, pure). The kind is read from the words of the task's name when the world is built, so no CRM
+details are written in the code; a name that fits two kinds goes to the first in that fixed order. Each district has its own
+ring colour under its astronauts, and the card names the district.
+
 ## Cowork / local agents
 
 GitHub cannot see agents that run elsewhere, so they are listed by hand in `src/config.mjs`. They are shown asleep and
@@ -96,7 +101,7 @@ connection and a browser with WebGL. Every model and texture is drawn in code; t
 
 | Area | Files |
 | --- | --- |
-| Pure logic, tested without a browser | `world.mjs` (islands, agents, events, designs), `sites.mjs` (website checks), `personal.mjs` (what a visitor chooses just for themselves, kept in their own browser), `demo.mjs` (invented demo tasks), `progress.mjs` (how far a task's run has got), `anim.mjs` (poses, the work cycle, the replay clock), `overview.mjs` (manager totals), `activation.mjs`, `data.mjs`, `feed.mjs` |
+| Pure logic, tested without a browser | `world.mjs` (islands, agents, events, designs), `sites.mjs` (website checks), `personal.mjs` (what a visitor chooses just for themselves, kept in their own browser), `demo.mjs` (invented demo tasks), `progress.mjs` (how far a task's run has got), `districts.mjs` (the kind of job a task does), `anim.mjs` (poses, the work cycle, the replay clock), `overview.mjs` (manager totals), `activation.mjs`, `data.mjs`, `feed.mjs` |
 | Page | `main.mjs` (wires everything), `list.mjs` (overview panel), `panel.mjs` (agent card), `admin.mjs`, `requests.mjs`, `config.mjs`, `index.html`, `style.css` |
 | 3D | `scene.mjs`, `post.mjs` (effects), `space.mjs` (sky, planet, ground), `kit.mjs` (materials and merging), `buildings.mjs`, `bases.mjs`, `decor.mjs`, `models.mjs` (astronauts, symbols), `textures.mjs`, `grounding.mjs` |
 

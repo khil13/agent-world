@@ -79,6 +79,7 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
   if (agent.repo) sub.append('  in ', el('b', '', agent.repo));
   else if (agent.kind === 'workflow' && agent.island) sub.append('  on ', el('b', '', agent.island));
   else if (agent.kind === 'site' && safeUrl(agent.url)) { const u = new URL(agent.url); sub.append('  at ', el('b', '', u.host + (u.pathname === '/' ? '' : u.pathname))); }
+  if (agent.district) sub.append(' · ', el('b', '', `${agent.district} district`));
   body.append(sub);
 
   if (agent.kind === 'site') {
