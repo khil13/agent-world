@@ -115,10 +115,15 @@ function refreshUi() {
 }
 
 // ----- colours: what the card's colour section shows and does for this agent. A choice is kept in this browser only.
+// Astronauts to build again in their new colours. Dragging inside the colour picker fires dozens of changes a second, so they are
+// collected and built once per frame.
+const toRecolour = new Set();
 function changeColours(next, ids, redrawCard) {
   if (next === state.colours) return;
   state.colours = next; mine.setJson('colours', next);
-  scene?.setColours(next); ids.forEach(id => scene?.recolour(id));
+  scene?.setColours(next);
+  if (!toRecolour.size) requestAnimationFrame(() => { for (const id of toRecolour) scene?.recolour(id); toRecolour.clear(); });
+  ids.forEach(id => toRecolour.add(id));
   if (redrawCard) refreshUi();
 }
 function coloursFor(agent) {

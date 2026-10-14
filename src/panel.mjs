@@ -111,11 +111,9 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
     const grid = el('div', 'stats'); grid.append(stat(d.schedule || '—', 'schedule'));
     body.append(grid, el('p', 'note', d.note));
   } else if (agent.kind === 'workflow' && !d.latest) {
-    const grid = el('div', 'stats'); for (const s of cardStats(agent, now)) grid.append(stat(s.value, s.label, s.cls));
-    body.append(el('p', 'note', agent.disabled ? 'This task is switched off.' : 'This task has not run yet.'), grid);
+    body.append(el('p', 'note', agent.disabled ? 'This task is switched off.' : 'This task has not run yet.'), statGrid(agent, now));
   } else if (d.latest) {
-    const grid = el('div', 'stats'); for (const s of cardStats(agent, now)) grid.append(stat(s.value, s.label, s.cls));
-    body.append(grid, el('div', 'sec', agent.kind === 'workflow' ? 'Recent runs' : 'Recent commits'));
+    body.append(statGrid(agent, now), el('div', 'sec', agent.kind === 'workflow' ? 'Recent runs' : 'Recent commits'));
     const list = el('ul', 'runs');
     for (const it of d.recent) {
       const li = el('li'), line = el('span', 'm'), u = safeUrl(it.url), label = it.result || it.text;
@@ -127,6 +125,13 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
   }
   if (agent.demo) body.append(el('p', 'note', 'Demo task: invented to try out the world. Nothing here is real.'));
   root.append(top, bar, buttons, ...extras, body, ...(actions.colours ? [colourSection(actions.colours, agent)] : []));
+}
+
+// The grid of figures on the card for an agent (see cardStats in details.mjs).
+function statGrid(agent, now) {
+  const grid = el('div', 'stats');
+  for (const s of cardStats(agent, now)) grid.append(stat(s.value, s.label, s.cls));
+  return grid;
 }
 
 function stat(value, label, cls = '') {
