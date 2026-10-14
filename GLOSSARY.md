@@ -85,7 +85,7 @@ A setting a visitor makes only for themselves (effects on or off, the feed open,
 _Avoid_: Preference, setting (those suggest it is shared)
 
 **Custom colour**:
-The suit and helmet colours chosen for an agent by whoever is looking, in place of the colours its kind gives it. Kept in that person's own browser only.
+The suit and helmet colours chosen for an agent by whoever is looking, in place of the colours its kind gives it. The suit and the helmet are chosen separately. Kept in that person's own browser only. A disabled task stays grey whatever was chosen.
 _Avoid_: Skin, theme
 
 **Admin**:

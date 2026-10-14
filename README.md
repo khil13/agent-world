@@ -85,6 +85,16 @@ ago, how each started, how long it took and a link). Everything comes from the t
 written by hand. The drawer follows the selected task, closes with its × or Escape, and is a sheet at the bottom on a narrow
 screen. Only https links are shown.
 
+## Colours
+
+Every astronaut has the suit and helmet colours its kind gives it, and anyone can choose others for any agent: the **Colours**
+section of the card has twelve swatches and a custom colour for the suit and for the helmet (they change separately, and the
+astronaut changes at once), a **Reset**, and **Apply to all on <island>**, which copies the parts that agent has chosen to every
+agent of the same island. A choice is kept in that visitor's own browser only (`src/personal.mjs`), never sent anywhere and
+never seen by anyone else; a value that is not a colour is ignored and at most 400 agents are remembered. A disabled task stays
+grey whatever was chosen, so its state can still be seen, and its choice is kept for when it is switched on. The colour logic is
+pure (`src/colours.mjs`, tested); `scene.recolour` rebuilds just that one astronaut.
+
 ## Cowork / local agents
 
 GitHub cannot see agents that run elsewhere, so they are listed by hand in `src/config.mjs`. They are shown asleep and
@@ -114,7 +124,7 @@ connection and a browser with WebGL. Every model and texture is drawn in code; t
 
 | Area | Files |
 | --- | --- |
-| Pure logic, tested without a browser | `world.mjs` (islands, agents, events, designs), `sites.mjs` (website checks), `personal.mjs` (what a visitor chooses just for themselves, kept in their own browser), `demo.mjs` (invented demo tasks), `progress.mjs` (how far a task's run has got), `districts.mjs` (the kind of job a task does), `schedule.mjs` (when a task runs next), `details.mjs` (what the drawer shows), `timewords.mjs` (time in plain words), `anim.mjs` (poses, the work cycle, the replay clock), `overview.mjs` (manager totals), `activation.mjs`, `data.mjs`, `feed.mjs` |
+| Pure logic, tested without a browser | `world.mjs` (islands, agents, events, designs), `sites.mjs` (website checks), `personal.mjs` (what a visitor chooses just for themselves, kept in their own browser), `demo.mjs` (invented demo tasks), `progress.mjs` (how far a task's run has got), `districts.mjs` (the kind of job a task does), `schedule.mjs` (when a task runs next), `details.mjs` (what the drawer shows), `colours.mjs` (astronaut colours and what a visitor chose), `timewords.mjs` (time in plain words), `anim.mjs` (poses, the work cycle, the replay clock), `overview.mjs` (manager totals), `activation.mjs`, `data.mjs`, `feed.mjs` |
 | Page | `main.mjs` (wires everything), `list.mjs` (overview panel), `panel.mjs` (agent card), `admin.mjs`, `requests.mjs`, `config.mjs`, `index.html`, `style.css` |
 | 3D | `scene.mjs`, `post.mjs` (effects), `space.mjs` (sky, planet, ground), `kit.mjs` (materials and merging), `buildings.mjs`, `bases.mjs`, `decor.mjs`, `models.mjs` (astronauts, symbols), `textures.mjs`, `grounding.mjs` |
 

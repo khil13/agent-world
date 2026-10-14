@@ -5,6 +5,7 @@ import { progressAt, progressLabel } from './progress.mjs';
 import { describeNextRun } from './schedule.mjs';
 import { ago } from './timewords.mjs';
 import { isTask, statusWord, safeUrl } from './details.mjs';
+import { SWATCHES } from './colours.mjs';
 
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const link = (text, url, cls) => { const a = el('a', cls, text); a.href = url; a.target = '_blank'; a.rel = 'noopener'; return a; };
@@ -13,7 +14,32 @@ const KIND_LABEL = { workflow: 'GitHub Action', builder: 'Coding agent', human: 
 const BAR = { running: 55, ok: 100, fail: 100, idle: 60, asleep: 0 };
 const SITE_WORD = { running: 'Live', fail: 'Down', idle: 'Checking…' };   // a website is working while it answers
 
-// actions: { focus } handlers for the buttons.
+// The colours section of a card: a button that opens two rows of twelve swatches and a custom colour (suit, helmet), a reset and
+// an apply-to-all. `c` is { choice, open, island, onToggle, onPick(part, hex, final), onReset, onApplyAll }.
+function colourSection(c, agent) {
+  const box = el('div', 'colours'), toggle = el('button', 'ghost cbtn', `🎨 Colours${c.choice.custom ? ' · changed' : ''}`);
+  toggle.type = 'button'; toggle.setAttribute('aria-expanded', String(c.open)); toggle.onclick = c.onToggle; box.append(toggle);
+  if (!c.open) return box;
+  for (const [part, label] of [['suit', 'Suit'], ['helmet', 'Helmet']]) {
+    const row = el('div', 'crow'), swatches = el('div', 'swatches');
+    for (const hex of SWATCHES) {
+      const b = el('button', c.choice[part] === hex ? 'sw on' : 'sw'); b.type = 'button'; b.style.background = hex; b.title = hex; b.setAttribute('aria-label', `${label} ${hex}`);
+      b.onclick = () => c.onPick(part, hex, true); swatches.append(b);
+    }
+    const pick = el('input', 'cpick'); pick.type = 'color'; pick.value = c.choice[part]; pick.title = 'Any colour'; pick.setAttribute('aria-label', `${label} custom colour`);
+    pick.oninput = () => c.onPick(part, pick.value, false);   // the astronaut changes as the colour is dragged, the card is redrawn when it is let go
+    pick.onchange = () => c.onPick(part, pick.value, true);
+    swatches.append(pick); row.append(el('span', 'cl', label), swatches); box.append(row);
+  }
+  const buttons = el('div', 'cbuttons'), reset = el('button', 'ghost', 'Reset'), all = el('button', 'ghost', `Apply to all on ${c.island}`);
+  for (const b of [reset, all]) { b.type = 'button'; b.disabled = !c.choice.custom; buttons.append(b); }
+  reset.onclick = c.onReset; all.onclick = c.onApplyAll;
+  box.append(buttons);
+  if (agent.disabled) box.append(el('p', 'note', 'This task is disabled, so it stays grey. Your choice is kept for when it is switched on.'));
+  return box;
+}
+
+// actions: { focus, activation, details, colours } handlers for the buttons and sections.
 export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}) {
   root.replaceChildren();
   root.hidden = !agent;
@@ -104,7 +130,7 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
     body.append(list);
   }
   if (agent.demo) body.append(el('p', 'note', 'Demo task: invented to try out the world. Nothing here is real.'));
-  root.append(top, bar, buttons, ...extras, body);
+  root.append(top, bar, buttons, ...extras, body, ...(actions.colours ? [colourSection(actions.colours, agent)] : []));
 }
 
 function stat(value, label, cls = '') {

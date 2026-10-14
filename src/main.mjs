@@ -17,6 +17,7 @@ import { demoTasks } from './demo.mjs';
 import { progressAt, progressLabel } from './progress.mjs';
 import { taskDetails, isTask } from './details.mjs';
 import { renderDrawer } from './drawer.mjs';
+import { cleanColours, choiceOf, setColour, resetColour, applyToIsland } from './colours.mjs';
 
 const mine = personal();   // what this visitor chose just for themselves, kept in their own browser
 // ?demo=tasks fills the CRM islands with invented demo tasks (see demo.mjs); without it the page shows real data only
@@ -36,7 +37,7 @@ toggle.onclick = () => setFeedOpen(feedBox.classList.contains('collapsed'));
 if (mine.choice('feedOpen', ['1', '0'], '0') === '1') setFeedOpen(true);   // collapsed by default
 const labels = $('#labels'), card = $('#card'), side = $('#side');
 const demoTag = $('#demoTag'); if (demoTag) demoTag.hidden = !demoOn;   // an older cached page may not have the label yet
-const state = { builtAt: 0, data: null, probes: {}, world: null, selectedAgent: null, selectedIsland: null, hoverAgent: null, showDormant: false, expanded: new Set(), needsFit: true, drawerOpen: false, drawerTab: 'overview' };
+const state = { builtAt: 0, data: null, probes: {}, world: null, selectedAgent: null, selectedIsland: null, hoverAgent: null, showDormant: false, expanded: new Set(), needsFit: true, drawerOpen: false, drawerTab: 'overview', colours: cleanColours(mine.json('colours', {})), coloursOpen: false };
 const drawer = $('#drawer');   // missing in an older cached page, which then simply has no drawer
 const ui = { papers: [], errands: [], hubGlow: 0 };
 const bubbles = new Map();       // agent id -> { el, from, until }
@@ -83,6 +84,7 @@ onAdminChange(() => { showAdmin(); act.confirming = act.busy = act.error = null;
 // ----- building and refreshing the world
 function rebuild() {
   if (!state.data) return;
+  scene?.setColours(state.colours);   // the visitor's astronaut colours, for every astronaut built from here on
   const now = Date.now(), tasks = demoOn ? demoTasks(now) : undefined;
   const base = buildWorld(state.data, CONFIG, now, { showDormant: state.showDormant, probes: state.probes, tasks });
   reqs.reconcileWith(base.agents);   // a run the hourly data has caught up with no longer needs its own overlay
@@ -107,9 +109,26 @@ function rebuild() {
 function refreshUi() {
   if (state.world) renderList(side, state.world, state, { island: selectIsland, agent: selectAgent });
   const agent = state.world?.agents.find(a => a.id === state.selectedAgent) || null;
-  renderPanel(card, agent, clearSelection, Date.now(), { focus: () => scene?.focusAgent(state.selectedAgent), activation: agent && activationFor(agent), details: drawer ? openDrawer : null });
+  renderPanel(card, agent, clearSelection, Date.now(), { focus: () => scene?.focusAgent(state.selectedAgent), activation: agent && activationFor(agent), details: drawer ? openDrawer : null, colours: agent && coloursFor(agent) });
   refreshDrawer(agent);
   if (agent) placeCard();
+}
+
+// ----- colours: what the card's colour section shows and does for this agent. A choice is kept in this browser only.
+function changeColours(next, ids, redrawCard) {
+  if (next === state.colours) return;
+  state.colours = next; mine.setJson('colours', next);
+  scene?.setColours(next); ids.forEach(id => scene?.recolour(id));
+  if (redrawCard) refreshUi();
+}
+function coloursFor(agent) {
+  return {
+    choice: choiceOf(agent, state.colours), open: state.coloursOpen, island: agent.island,
+    onToggle: () => { state.coloursOpen = !state.coloursOpen; refreshUi(); },
+    onPick: (part, hex, final) => changeColours(setColour(state.colours, agent.id, part, hex), [agent.id], final),
+    onReset: () => changeColours(resetColour(state.colours, agent.id), [agent.id], true),
+    onApplyAll: () => changeColours(applyToIsland(state.colours, state.world, agent.id), state.world.agents.filter(a => a.island === agent.island).map(a => a.id), true),
+  };
 }
 
 // ----- the details drawer follows the selected task: it opens from the card's Details button and closes with its button, with Escape,

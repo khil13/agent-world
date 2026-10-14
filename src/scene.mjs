@@ -11,6 +11,7 @@ import { createPost } from './post.mjs';
 import { addBlob } from './grounding.mjs';
 import { tileOffsets, TILE, crowdLook } from './world.mjs';
 import { DISTRICT_TINT } from './districts.mjs';
+import { lookOf, toInt } from './colours.mjs';
 import { pose, hash, errand, workCycle } from './anim.mjs';
 
 const WALK_UNITS = 0.5 / 14;          // pose offsets are in old pixel units; this turns them into tiles
@@ -103,7 +104,7 @@ export function createScene(container, { fx = null, onFxAuto = () => {}, onConte
   const rim = new THREE.DirectionalLight(0x4ad8ff, 1.4); rim.position.set(-30, 18, -40);
   scene.add(sun, sun.target, rim);
 
-  const S = { world: null, root: new THREE.Group(), agents: new Map(), pickables: [], rocks: [], hub: null, focus: null, papers: new Map(),
+  const S = { world: null, saved: {}, root: new THREE.Group(), agents: new Map(), pickables: [], rocks: [], hub: null, focus: null, papers: new Map(),
     ring: null, bots: null, hqs: new Map(), hubTop: new THREE.Vector3(0, 6, 0), size: { w: 1, h: 1 } };
   scene.add(S.root);
   S.ring = new THREE.Mesh(new THREE.TorusGeometry(1.55, 0.06, 8, 40), new THREE.MeshBasicMaterial({ color: 0xffe066 }));
@@ -169,9 +170,32 @@ export function createScene(container, { fx = null, onFxAuto = () => {}, onConte
   }
 
   // ----- building the world
+  const disposeTree = obj => obj.traverse(o => { o.geometry?.dispose?.(); [].concat(o.material || []).forEach(m => { if (!m.map?.userData?.keep) m.map?.dispose?.(); m.dispose(); }); });
   function clear() {
-    S.root.traverse(o => { o.geometry?.dispose?.(); [].concat(o.material || []).forEach(m => { if (!m.map?.userData?.keep) m.map?.dispose?.(); m.dispose(); }); });
+    disposeTree(S.root);
     S.root.clear(); S.agents.clear(); S.hqs.clear(); S.pickables = []; S.rocks = []; S.papers.forEach(p => p.removeFromParent()); S.papers.clear();
+  }
+
+  // An agent's astronaut, in the colours the visitor chose for it (or its kind's), with the crate it carries.
+  function makeRobot(a, front, astro) {
+    const look = lookOf(a, S.saved), robot = buildRobot(toInt(look.suit), toInt(look.helmet));
+    robot.position.set(a.pos.x, 0.14, a.pos.z + front);
+    robot.scale.setScalar(astro); robot.rotation.order = 'YXZ'; robot.userData.agentId = a.id; addBlob(robot, 0.2, 0.05, 0.55);
+    const carry = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshStandardMaterial({ color: PALETTE.orange, roughness: 0.45 }));
+    carry.position.set(0, 0.45, 0.24); carry.visible = false; robot.add(carry);
+    return { robot, carry };
+  }
+
+  // The visitor's colour choices (see colours.mjs): used for every astronaut built from now on.
+  const setColours = saved => { S.saved = saved || {}; };
+  // Builds one astronaut again in its current colours, where the old one stood, without touching the rest of the world.
+  function recolour(id) {
+    const r = S.agents.get(id); if (!r) return;
+    const { robot, carry } = makeRobot(r.agent, r.front, r.astro), old = r.robot;
+    robot.position.copy(old.position); robot.rotation.copy(old.rotation); robot.scale.copy(old.scale);
+    S.root.remove(old); disposeTree(old);
+    S.pickables[S.pickables.indexOf(old)] = robot; S.root.add(robot);
+    r.robot = robot; r.carry = carry;
   }
 
   function setWorld(world, { refit = false } = {}) {
@@ -219,11 +243,8 @@ export function createScene(container, { fx = null, onFxAuto = () => {}, onConte
       building.rotation.y = Math.floor(ph * 8) * (Math.PI / 4);
       building.scale.set(BUILD * k, BUILD * k * look.flat, BUILD * k);   // chunky, like the reference; flatter on a crowded island so it hides nobody
       building.userData.agentId = a.id; addBlob(building, 0.72, 0.05, 0.55);
-      const robot = buildRobot(a.kind, a.name, a.disabled); robot.position.set(a.pos.x, 0.14, a.pos.z + front);
+      const { robot, carry } = makeRobot(a, front, astro);
       if (DISTRICT_TINT[a.district] !== undefined) spots.push([a.pos.x, a.pos.z + front, astro * 0.36, DISTRICT_TINT[a.district]]);
-      robot.scale.setScalar(astro); robot.rotation.order = 'YXZ'; robot.userData.agentId = a.id; addBlob(robot, 0.2, 0.05, 0.55);
-      const carry = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshStandardMaterial({ color: PALETTE.orange, roughness: 0.45 }));
-      carry.position.set(0, 0.45, 0.24); carry.visible = false; robot.add(carry);
       const sparks = a.status === 'running' ? Array.from({ length: 6 }, () => { const sp = new THREE.Mesh(new THREE.SphereGeometry(0.11, 6, 5), new THREE.MeshBasicMaterial({ color: 0xfff1a8 })); root.add(sp); return sp; }) : [];
       const halo = a.status === 'running' ? new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.09, 8, 40), new THREE.MeshBasicMaterial({ color: 0x7fe9ff, transparent: true })) : null;
       if (halo) { halo.rotation.x = Math.PI / 2; root.add(halo); }
@@ -376,6 +397,6 @@ export function createScene(container, { fx = null, onFxAuto = () => {}, onConte
     post.render(camera.position.distanceTo(controls.target));
   }
 
-  return { debugRoot: () => S.root, stats: () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, ratio: renderer.getPixelRatio() }), setFx: on => post.setEnabled(on), fxOn: () => post.enabled, setWorld, update, pick, project, agentHead, islandLabel, focusAgent, focusIsland, fit, zoom, setInset, nearAgents, cameraDistance, hasAgent: id => S.agents.has(id),
+  return { debugRoot: () => S.root, stats: () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, ratio: renderer.getPixelRatio() }), setFx: on => post.setEnabled(on), fxOn: () => post.enabled, setWorld, setColours, recolour, update, pick, project, agentHead, islandLabel, focusAgent, focusIsland, fit, zoom, setInset, nearAgents, cameraDistance, hasAgent: id => S.agents.has(id),
     element: renderer.domElement };
 }

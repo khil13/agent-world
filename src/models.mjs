@@ -7,13 +7,12 @@ export { buildHub, buildingFor, HUB_TOP } from './buildings.mjs';
 
 // An astronaut for every agent: a chunky suit in a saturated colour that tells the kind of agent apart and stands out
 // from the white and grey buildings (orange for workflows, pink for Claude, red for the bot, violet for Cowork, teal for a website, blue for
-// you), with white stripes and a mission patch, a big helmet in the suit colour with a dark glass visor, ear pods, a chest control
+// you; see colours.mjs, which also holds what a visitor has chosen instead), with white stripes and a mission patch, a big helmet in the suit colour with a dark glass visor, ear pods, a chest control
 // box with a hose to the backpack, dark puffy gloves and boots. No face: the visor is just glass.
 // The patch is a plain coloured disc, not any real agency's badge.
-const SUITS = { workflow: 0xff7a1a, builder: 0xff3d8a, bot: 0xe5353b, human: 0x2f86ff, local: 0x9a62ff, site: 0x14b8a6 };
-export function buildRobot(kind, name, disabled = false) {
-  const key = kind === 'builder' ? (name === 'Auto-commit bot' ? 'bot' : 'builder') : SUITS[kind] ? kind : 'workflow';
-  const SUIT = disabled ? 0x9aa3b2 : SUITS[key], trim = 0xffffff;   // a disabled task is greyed out
+// `suit` and `helmet` are colours as numbers (the helmet follows the suit when none is given).
+export function buildRobot(suitColour, helmetColour = suitColour) {
+  const SUIT = suitColour, HELMET = helmetColour, trim = 0xffffff;
   const WHITE = 0xf3f5f9, GREY = 0xdfe4ec, STEEL = 0x8b94a3, DARK = 0x2d3240;
   // One vertex-coloured fabric material (its own, because the alarm flashes it red) covers the whole suit, so every
   // part of it merges into a single mesh.
@@ -36,7 +35,7 @@ export function buildRobot(kind, name, disabled = false) {
   at(new THREE.TorusGeometry(0.05, 0.009, 5, 10, Math.PI), STEEL, 0.1, 0.31, 0, [0, Math.PI / 2, 0]);        // hose from chest to backpack
   for (const side of [-1, 1]) at(new THREE.CylinderGeometry(0.045, 0.045, 0.06, 10).rotateZ(Math.PI / 2), GREY, side * 0.165, 0.6, 0);   // ear pods
   // the helmet and its glass visor (a cap of a slightly larger sphere, facing front)
-  g.add(mesh(new THREE.SphereGeometry(0.158, 18, 14), toy(SUIT, { roughness: 0.28, metalness: 0.05, clearcoat: 0.9, clearcoatRoughness: 0.12 }), 0, 0.6, 0));
+  g.add(mesh(new THREE.SphereGeometry(0.158, 18, 14), toy(HELMET, { roughness: 0.28, metalness: 0.05, clearcoat: 0.9, clearcoatRoughness: 0.12 }), 0, 0.6, 0));
   const glass = visorSkin();
   g.add(mesh(new THREE.SphereGeometry(0.162, 14, 8, Math.PI / 2 - 0.95, 1.9, Math.PI / 2 - 0.78, 1.3),
     skinned(glass, { color: 0xffffff, emissiveMap: glass.map, emissive: 0xffffff, emissiveIntensity: 0.35, roughness: 0.08, metalness: 0.5, clearcoat: 1, clearcoatRoughness: 0.04 }), 0, 0.6, 0));
