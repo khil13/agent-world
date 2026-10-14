@@ -4,6 +4,7 @@ import { demoTasks, DEMO_ISLANDS } from '../src/demo.mjs';
 import { buildWorld } from '../src/world.mjs';
 import { CONFIG } from '../src/config.mjs';
 import { progressAt } from '../src/progress.mjs';
+import { nextRunOf, describeNextRun } from '../src/schedule.mjs';
 
 const NOW = Date.parse('2026-10-02T12:00:00Z');
 const all = feed => Object.values(feed).flat();
@@ -79,4 +80,14 @@ test('a demo run that is still going never shows as finished, and every figure i
 test('finished demo tasks carry the history that the estimates come from', () => {
   const t = demoTasks(NOW)['NL CRM'].find(x => x.status === 'completed' && x.concl === 'success' && x.enabled);
   assert.ok(t.runs.length >= 3 && t.runs.every(r => r.ms > 0), 'a few past runs, each with a duration');
+});
+
+test('demo tasks have schedules, most readable, one kind that runs only when started and one that cannot be read', () => {
+  const w = buildWorld({ repos: [] }, CONFIG, NOW, { tasks: demoTasks(NOW) });
+  const texts = w.agents.filter(a => a.demo && !a.disabled).map(a => describeNextRun({ enabled: true, schedule: a.details.schedule }, NOW, 'UTC'));
+  assert.ok(texts.some(t => /^in /.test(t)), 'a time');
+  assert.ok(texts.includes('no schedule: runs when started'));
+  assert.ok(texts.includes('schedule unknown'));
+  const readable = w.agents.filter(a => a.demo && a.details.schedule?.length && nextRunOf(a.details.schedule, NOW) !== null);
+  assert.ok(readable.length > 20, 'most of the 45 have a time');
 });

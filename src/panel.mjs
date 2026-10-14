@@ -2,6 +2,7 @@
 // and progress bar, an Open button, then the details. Built with DOM calls and textContent, never
 // innerHTML, because commit messages and workflow names are text from outside this page.
 import { progressAt, progressLabel } from './progress.mjs';
+import { describeNextRun } from './schedule.mjs';
 
 export const ago = (iso, now = Date.now()) => {
   const s = Math.max(0, (now - Date.parse(iso)) / 1000);
@@ -34,7 +35,9 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
   titles.append(el('h2', '', agent.kind === 'site' ? `${agent.island} website` : agent.name));
   const chips = el('div', 'chips'), chip = el('span', `chip ${agent.status}`);
   chip.append(el('span', `dot ${agent.status}`), agent.disabled ? 'Disabled' : d.queued ? 'Queued' : (agent.kind === 'site' ? SITE_WORD : STATUS_WORD)[agent.status] || agent.status);
-  const prog = agent.kind === 'workflow' && 'progress' in d ? progressAt(d.progress, now) : null;   // only tasks carry progress
+  const isTask = agent.kind === 'workflow' && 'progress' in d;   // only tasks carry progress and a schedule
+  const prog = isTask ? progressAt(d.progress, now) : null;
+  const nextRun = isTask && agent.status !== 'running' ? describeNextRun({ enabled: !agent.disabled, schedule: d.schedule }, now) : null;   // in the viewer's own time
   chips.append(chip, el('span', 'when', when));
   if (prog) chips.append(el('span', 'pct', progressLabel(prog)));
   titles.append(chips);
@@ -90,10 +93,12 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
     const grid = el('div', 'stats'); grid.append(stat(d.schedule || '—', 'schedule'));
     body.append(grid, el('p', 'note', d.note));
   } else if (agent.kind === 'workflow' && !d.latest) {
-    body.append(el('p', 'note', agent.disabled ? 'This task is switched off.' : 'This task has not run yet.'));
+    const grid = el('div', 'stats'); if (nextRun) grid.append(stat(nextRun, 'next run', 'wide'));
+    body.append(el('p', 'note', agent.disabled ? 'This task is switched off.' : 'This task has not run yet.'), grid);
   } else if (d.latest) {
     const grid = el('div', 'stats');
     if (agent.kind === 'workflow') grid.append(stat(d.latest.result, 'latest run'), stat((d.latest.event || '—').replace(/_/g, ' '), 'triggered by'));
+    if (nextRun) grid.append(stat(nextRun, 'next run', 'wide'));
     else grid.append(stat(ago(d.latest.date, now), 'last commit'), stat(String(d.count ?? d.recent.length), 'commits · 8w'));
     body.append(grid, el('div', 'sec', agent.kind === 'workflow' ? 'Recent runs' : 'Recent commits'));
     const list = el('ul', 'runs');
@@ -109,8 +114,8 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
   root.append(top, bar, buttons, ...extras, body);
 }
 
-function stat(value, label) {
-  const s = el('div', 'stat');
+function stat(value, label, cls = '') {
+  const s = el('div', cls ? `stat ${cls}` : 'stat');
   s.append(el('b', '', value), el('span', '', label));
   return s;
 }

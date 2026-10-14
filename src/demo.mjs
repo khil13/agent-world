@@ -9,6 +9,8 @@ const NAMES = ['news scan', 'news digest', 'press watch', 'contact finder', 'con
 // What state each task is in, so every state the world can draw is on show. Each island starts the list at a different place.
 const STATES = ['ok', 'ok', 'running', 'ok', 'fail', 'ok', 'queued', 'ok', 'disabled', 'ok', 'running', 'ok', 'ok', 'cancelled', 'never'];
 const MIN = 60e3;
+// Schedules in GitHub's form (UTC): daily, weekdays, weekly, hourly, every six hours, none (only when started), one that cannot be read, and two a day.
+const SCHEDULES = [['0 6 * * *'], ['30 2 * * 1-5'], ['0 5 * * 1'], ['15 * * * *'], ['0 */6 * * *'], [], ['@daily'], ['0 7 * * *', '0 19 * * *']];
 
 export function demoTasks(now = Date.now()) {
   const ago = minutes => new Date(now - minutes * MIN).toISOString();
@@ -20,7 +22,7 @@ export function demoTasks(now = Date.now()) {
 
   // The task as the feed gives it: its latest run's fields on the task itself, and its runs newest first.
   const make = (name, state, i, n) => {
-    const base = { name, enabled: true, demo: true }, v = (i * 5 + n) % 3;   // v spreads the kinds of figure across the islands
+    const base = { name, enabled: true, demo: true, schedule: SCHEDULES[(i + 3 * n) % SCHEDULES.length] }, v = (i * 5 + n) % 3;   // v spreads the kinds of figure across the islands
     const withRuns = (latest, older = history(i)) => ({ ...base, ...latest, runs: [latest, ...older] });
     switch (state) {
       case 'running': {

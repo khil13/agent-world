@@ -173,3 +173,18 @@ test('districts change who stands next to whom but not how many stand on the isl
   assert.deepEqual(order, [...order].sort((a, b) => ['News', 'Contacts', 'Competitors', 'Research', 'Reports'].indexOf(a) - ['News', 'Contacts', 'Competitors', 'Research', 'Reports'].indexOf(b)), 'each district is one unbroken run');
   assert.ok(nl.agentCount === 16);
 });
+
+test('a task carries the schedule entries of its workflow, and an entry that is not text becomes an unreadable one', () => {
+  const sched = name => on(world({ 'NL CRM': [task(name, { schedule: name === 'one' ? ['0 6 * * *'] : name === 'odd' ? ['0 6 * * *', 5, null, 'x'.repeat(300)] : name === 'none' ? [] : name === 'text' ? '0 6 * * *' : undefined })] }), 'NL CRM').find(a => a.name === name).details;
+  assert.deepEqual(sched('one').schedule, ['0 6 * * *']);
+  assert.deepEqual(sched('odd').schedule, ['0 6 * * *', '', '', 'x'.repeat(100)], 'nothing is dropped, so a next run is never worked out from a part of the schedule');
+  assert.deepEqual(sched('none').schedule, [], 'an empty list means it runs only when started');
+  assert.equal('schedule' in sched('text'), false, 'a schedule that is not a list is not a schedule');
+  assert.equal('schedule' in sched('missing'), false, 'no schedule given: unknown, which is not the same as none');
+});
+
+test('workflows of a published repo carry no schedule', () => {
+  const repo = { name: 'r', full: 'me/r', desc: '', url: 'https://github.com/me/r', home: '', lang: 'JS', pushed: iso(1), priv: false, issues: 0, prs: '—', commits: [],
+    workflows: [{ name: 'Scan', status: 'completed', concl: 'success', date: iso(1), url: 'u', event: 'schedule' }] };
+  assert.equal('schedule' in buildWorld({ repos: [repo] }, { localAgents: [] }, NOW, {}).agents.find(a => a.name === 'Scan').details, false);
+});

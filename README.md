@@ -72,6 +72,11 @@ fits none (`src/districts.mjs`, pure). The kind is read from the words of the ta
 details are written in the code; a name that fits two kinds goes to the first in that fixed order. Each district has its own
 ring colour under its astronauts, and the card names the district.
 
+A task that is not working says when it **runs next** on its card ("in 3 h 12 min, Wed 06:00", in the viewer's own time),
+worked out from the schedule entries of its workflow (`src/schedule.mjs`, pure; GitHub's cron form, which is always UTC).
+Lists, ranges, steps and month and weekday names are read; anything else, or a schedule that never happens, says "schedule
+unknown" rather than a guess, an empty schedule says it only runs when started, and a disabled task says "Disabled".
+
 ## Cowork / local agents
 
 GitHub cannot see agents that run elsewhere, so they are listed by hand in `src/config.mjs`. They are shown asleep and
@@ -101,7 +106,7 @@ connection and a browser with WebGL. Every model and texture is drawn in code; t
 
 | Area | Files |
 | --- | --- |
-| Pure logic, tested without a browser | `world.mjs` (islands, agents, events, designs), `sites.mjs` (website checks), `personal.mjs` (what a visitor chooses just for themselves, kept in their own browser), `demo.mjs` (invented demo tasks), `progress.mjs` (how far a task's run has got), `districts.mjs` (the kind of job a task does), `anim.mjs` (poses, the work cycle, the replay clock), `overview.mjs` (manager totals), `activation.mjs`, `data.mjs`, `feed.mjs` |
+| Pure logic, tested without a browser | `world.mjs` (islands, agents, events, designs), `sites.mjs` (website checks), `personal.mjs` (what a visitor chooses just for themselves, kept in their own browser), `demo.mjs` (invented demo tasks), `progress.mjs` (how far a task's run has got), `districts.mjs` (the kind of job a task does), `schedule.mjs` (when a task runs next), `anim.mjs` (poses, the work cycle, the replay clock), `overview.mjs` (manager totals), `activation.mjs`, `data.mjs`, `feed.mjs` |
 | Page | `main.mjs` (wires everything), `list.mjs` (overview panel), `panel.mjs` (agent card), `admin.mjs`, `requests.mjs`, `config.mjs`, `index.html`, `style.css` |
 | 3D | `scene.mjs`, `post.mjs` (effects), `space.mjs` (sky, planet, ground), `kit.mjs` (materials and merging), `buildings.mjs`, `bases.mjs`, `decor.mjs`, `models.mjs` (astronauts, symbols), `textures.mjs`, `grounding.mjs` |
 

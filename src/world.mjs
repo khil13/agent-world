@@ -71,7 +71,9 @@ function taskAgents(island, tasks) {
     out.push({ id: `${island}::${t.name}`, name: t.name, kind: 'workflow', status: taskStatus(t), repo: t.repo || null, url: t.url || null, district: districtOf(t.name),
       ...(t.demo ? { demo: true } : {}), ...(t.enabled === false ? { disabled: true } : {}),
       details: { latest: runs.length ? runDetail(runs[0]) : null, recent: runs.slice(0, RECENT).map(runDetail), ...(t.enabled !== false && t.status === 'queued' ? { queued: true } : {}),
-        progress: t.enabled === false || !runs.length ? null : progressBasis(runs[0], runs.slice(1)) } });   // read at any moment with progressAt
+        progress: t.enabled === false || !runs.length ? null : progressBasis(runs[0], runs.slice(1)),   // read at any moment with progressAt
+        // the schedule entries as given (see schedule.mjs); one that is not text is kept as an unreadable one, so no next run is worked out from part of it
+        ...(Array.isArray(t.schedule) ? { schedule: t.schedule.map(s => (typeof s === 'string' ? s.slice(0, 100) : '')) } : {}) } });
   }
   return out;
 }

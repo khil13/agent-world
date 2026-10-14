@@ -64,6 +64,10 @@ _Avoid_: Stats, metrics, report
 A group of task agents on one island that do the same kind of job (news, contacts, competitors, research, reports, or Other when the name fits none), standing together under rings of the district's colour. The kind is read from the words of the task's name.
 _Avoid_: Zone, cluster
 
+**Next run**:
+When a task that is not working will start by itself next, worked out from its schedule and shown in the viewer's own time. It says "schedule unknown" when the schedule cannot be read, and never a guessed time.
+_Avoid_: Due, ETA (an ETA is when a run that is going will finish)
+
 **Stuck**:
 A working task whose run has taken much longer than that task usually does. Shown amber first, then red.
 _Avoid_: Hung, frozen
