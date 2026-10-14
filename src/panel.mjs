@@ -1,6 +1,8 @@
 // The card that pops up over a clicked agent, like the one in the reference: avatar, title, a status chip
 // and progress bar, an Open button, then the details. Built with DOM calls and textContent, never
 // innerHTML, because commit messages and workflow names are text from outside this page.
+import { progressAt, progressLabel } from './progress.mjs';
+
 export const ago = (iso, now = Date.now()) => {
   const s = Math.max(0, (now - Date.parse(iso)) / 1000);
   if (s < 60) return 'just now';
@@ -32,12 +34,14 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
   titles.append(el('h2', '', agent.kind === 'site' ? `${agent.island} website` : agent.name));
   const chips = el('div', 'chips'), chip = el('span', `chip ${agent.status}`);
   chip.append(el('span', `dot ${agent.status}`), agent.disabled ? 'Disabled' : d.queued ? 'Queued' : (agent.kind === 'site' ? SITE_WORD : STATUS_WORD)[agent.status] || agent.status);
+  const prog = agent.kind === 'workflow' && 'progress' in d ? progressAt(d.progress, now) : null;   // only tasks carry progress
   chips.append(chip, el('span', 'when', when));
+  if (prog) chips.append(el('span', 'pct', progressLabel(prog)));
   titles.append(chips);
   const x = el('button', 'x', '×'); x.setAttribute('aria-label', 'Close'); x.onclick = onClose;
   top.append(face, titles, x);
 
-  const bar = el('div', `bar ${agent.status}`); bar.append(el('i')); bar.firstChild.style.width = `${agent.disabled || (agent.kind === 'workflow' && !d.latest) ? 0 : agent.kind === 'site' && agent.status === 'running' ? 100 : BAR[agent.status] ?? 0}%`;
+  const bar = el('div', `bar ${agent.status}${prog ? ' known' : ''}${prog && !prog.exact ? ' est' : ''}`); bar.append(el('i')); bar.firstChild.style.width = `${prog ? prog.value : agent.disabled || d.queued || (agent.kind === 'workflow' && !d.latest) ? 0 : agent.kind === 'site' && agent.status === 'running' ? 100 : BAR[agent.status] ?? 0}%`;
 
   // For the signed-in Admin, an agent that is not working gets an Activate button in place of the GitHub link
   // (see activation.mjs); everyone else keeps the plain Open link.

@@ -54,6 +54,13 @@ header{display:flex;align-items:center;gap:10px;padding:7px 14px;background:var(
 .bar i{display:block;height:100%;border-radius:4px;background:var(--green)}
 .bar.fail i{background:var(--red)} .bar.idle i{background:var(--amber)}
 .bar.running i{animation:work 1.6s ease-in-out infinite alternate}
+.bar.known i{animation:none}
+.bar.est i{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.28) 0 4px,transparent 4px 8px)}
+.pct{font-size:11px;font-weight:700;color:var(--txt)}
+.pbar{position:absolute;transform:translate(-50%,-100%);display:flex;align-items:center;gap:5px;padding:2px 7px 2px 5px;border-radius:99px;background:rgba(14,22,34,.92);box-shadow:0 0 0 1px var(--cyan);font-size:10px;font-weight:700;color:#dff8ff;white-space:nowrap}
+.pbar b{display:block;width:34px;height:5px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden}
+.pbar b i{display:block;height:100%;border-radius:3px;background:var(--green)}
+.pbar.est b i{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.3) 0 3px,transparent 3px 6px)}
 @keyframes work{from{width:25%}to{width:85%}}
 .buttons{display:flex;gap:8px;padding:10px 12px 4px}
 .open{flex:1;display:inline-flex;justify-content:center;align-items:center;padding:8px 12px;border-radius:10px;background:var(--coral);color:#fff;font-weight:700;text-decoration:none}

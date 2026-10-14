@@ -3,6 +3,7 @@
 // network), so the same input always gives the same world and it can be tested without a browser.
 // Positions are on the ground plane (x, z) in tile sizes; a tile is a hexagon with circumradius 1.
 import { siteStatus, siteLatest } from './sites.mjs';
+import { progressBasis } from './progress.mjs';
 const DAY = 864e5;
 const DORMANT_DAYS = 30;     // matches the agent-hq legend: dormant = quiet for more than 30 days
 const RUNNING_WINDOW = 30 * 60e3;   // a commit this fresh means the committer is working right now
@@ -67,7 +68,8 @@ function taskAgents(island, tasks) {
     const runs = t.runs && t.runs.length ? t.runs : t.status ? [t] : [];
     out.push({ id: `${island}::${t.name}`, name: t.name, kind: 'workflow', status: taskStatus(t), repo: t.repo || null, url: t.url || null,
       ...(t.demo ? { demo: true } : {}), ...(t.enabled === false ? { disabled: true } : {}),
-      details: { latest: runs.length ? runDetail(runs[0]) : null, recent: runs.slice(0, RECENT).map(runDetail), ...(t.enabled !== false && t.status === 'queued' ? { queued: true } : {}) } });
+      details: { latest: runs.length ? runDetail(runs[0]) : null, recent: runs.slice(0, RECENT).map(runDetail), ...(t.enabled !== false && t.status === 'queued' ? { queued: true } : {}),
+        progress: t.enabled === false || !runs.length ? null : progressBasis(runs[0], runs.slice(1)) } });   // read at any moment with progressAt
   }
   return out;
 }

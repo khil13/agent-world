@@ -13,6 +13,7 @@ import { offerFor } from './activation.mjs';
 import { createRequests } from './requests.mjs';
 import { personal } from './personal.mjs';
 import { demoTasks } from './demo.mjs';
+import { progressAt, progressLabel } from './progress.mjs';
 
 const mine = personal();   // what this visitor chose just for themselves, kept in their own browser
 // ?demo=tasks fills the CRM islands with invented demo tasks (see demo.mjs); without it the page shows real data only
@@ -92,6 +93,7 @@ function rebuild() {
     const e = el('div', `islandlabel ${isl.health}`, isl.name); e.append(el('small', '', isl.dormant ? 'closed' : `${isl.agentCount}`));
     labels.append(e); islandLabels.set(isl.name, e);
   }
+  syncProgressBars(w);
   $('#btnDormant').textContent = 'dormant: ' + (state.showDormant ? 'shown' : 'hidden');
   $('#meta').textContent = `${w.islands.filter(i => !i.dormant).length} repos · ${w.agents.length} agents`;
   feed.setQuiet(w.events.length === 0 && !$('#feed ul').children.length);
@@ -168,6 +170,36 @@ async function refresh() {
   if (!same) { rebuild(); state.builtAt = Date.now(); } else refreshUi();     // the replay clock keeps running; only the events it draws from are swapped
 }
 
+// ----- progress: a small bar over each working task astronaut, and the open card's bar, kept moving between refreshes
+const progressBars = new Map();   // working task agent id -> its floating bar
+function syncProgressBars(w) {
+  for (const e of progressBars.values()) e.remove();
+  progressBars.clear();
+  for (const a of w.agents) {
+    if (a.status !== 'running' || !a.details?.progress) continue;
+    const e = el('div', 'pbar'), track = el('b'); track.append(el('i')); e.append(track, el('span')); labels.append(e); progressBars.set(a.id, e);
+  }
+  lastProgressSecond = -1;
+}
+let lastProgressSecond = -1;
+function updateProgress(t) {
+  const second = Math.floor(t);
+  if (second === lastProgressSecond || !state.world) return;
+  lastProgressSecond = second;
+  const now = Date.now(), byId = new Map(state.world.agents.map(a => [a.id, a]));
+  for (const [id, e] of progressBars) {
+    const p = progressAt(byId.get(id)?.details.progress, now);
+    e.classList.toggle('none', !p); e.classList.toggle('est', !!p && !p.exact);
+    if (p) { e.firstChild.firstChild.style.width = `${p.value}%`; e.lastChild.textContent = progressLabel(p); }
+  }
+  const sel = byId.get(state.selectedAgent);
+  if (sel && 'progress' in (sel.details || {})) {
+    const p = progressAt(sel.details.progress, now), fill = card.querySelector('.bar.known i'), pct = card.querySelector('.pct');
+    if (p && fill) fill.style.width = `${p.value}%`;
+    if (p && pct) pct.textContent = progressLabel(p);
+  }
+}
+
 // ----- overlays that follow things in the 3D view
 function place(elm, p, dy = 0) {
   elm.style.display = p && p.visible ? '' : 'none';
@@ -225,6 +257,8 @@ function tick() {
   scene?.update(t, { ...ui, t, selectedId: state.selectedAgent, hoverId: state.hoverAgent });
   if (scene && state.world) {
     for (const isl of state.world.islands) { const e = islandLabels.get(isl.name); if (e) place(e, scene.islandLabel(isl)); }
+    updateProgress(t);
+    for (const [id, e] of progressBars) { if (e.classList.contains('none')) e.style.display = 'none'; else place(e, scene.agentHead(id), -26); }
     for (const [id, b] of bubbles) {
       if (t > b.until || !scene.hasAgent(id)) { b.el.remove(); bubbles.delete(id); continue; }
       place(b.el, scene.agentHead(id), -16); b.el.style.opacity = String(Math.max(0, Math.min(1, (t - b.from) * 5, (b.until - t) * 2.5)));

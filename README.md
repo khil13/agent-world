@@ -61,6 +61,12 @@ The world model takes them from a task feed (`opts.tasks`, keyed by island name)
 each (`src/demo.mjs`: every name starts with "Demo", and nothing in it is a real task). A label in the header says the tasks are
 invented, and a demo task never offers to start anything. Without the option the page is exactly as it was.
 
+A working task shows its **progress**: a small bar and percentage floating over its astronaut and a bar on its card
+(`src/progress.mjs`, pure). The figure is exact when the run reports its steps (steps done out of all steps, never 100 until the
+run ends) and an estimate, shown with a "≈", otherwise: the time so far out of the median of the task's last ten successful
+runs, held at 95. With nothing to base a figure on (no steps, no past runs) no number is shown, only a sweeping bar. A task whose
+run stopped early keeps the figure it had reached, in red.
+
 ## Cowork / local agents
 
 GitHub cannot see agents that run elsewhere, so they are listed by hand in `src/config.mjs`. They are shown asleep and
@@ -90,7 +96,7 @@ connection and a browser with WebGL. Every model and texture is drawn in code; t
 
 | Area | Files |
 | --- | --- |
-| Pure logic, tested without a browser | `world.mjs` (islands, agents, events, designs), `sites.mjs` (website checks), `personal.mjs` (what a visitor chooses just for themselves, kept in their own browser), `demo.mjs` (invented demo tasks), `anim.mjs` (poses, the work cycle, the replay clock), `overview.mjs` (manager totals), `activation.mjs`, `data.mjs`, `feed.mjs` |
+| Pure logic, tested without a browser | `world.mjs` (islands, agents, events, designs), `sites.mjs` (website checks), `personal.mjs` (what a visitor chooses just for themselves, kept in their own browser), `demo.mjs` (invented demo tasks), `progress.mjs` (how far a task's run has got), `anim.mjs` (poses, the work cycle, the replay clock), `overview.mjs` (manager totals), `activation.mjs`, `data.mjs`, `feed.mjs` |
 | Page | `main.mjs` (wires everything), `list.mjs` (overview panel), `panel.mjs` (agent card), `admin.mjs`, `requests.mjs`, `config.mjs`, `index.html`, `style.css` |
 | 3D | `scene.mjs`, `post.mjs` (effects), `space.mjs` (sky, planet, ground), `kit.mjs` (materials and merging), `buildings.mjs`, `bases.mjs`, `decor.mjs`, `models.mjs` (astronauts, symbols), `textures.mjs`, `grounding.mjs` |
 

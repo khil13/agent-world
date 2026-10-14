@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildWorld } from '../src/world.mjs';
+import { progressAt } from '../src/progress.mjs';
 
 const NOW = Date.parse('2026-10-02T12:00:00Z');
 const iso = hoursAgo => new Date(NOW - hoursAgo * 3600e3).toISOString();
@@ -110,4 +111,36 @@ test('an island full of tasks is drawn crowded, and every astronaut still has it
   assert.equal(new Set(spots).size, 16, 'no two share a tile');
   for (const a of on(w, 'NL CRM')) assert.ok(Math.hypot(a.pos.x - nl.x, a.pos.z - nl.z) < nl.radius, a.name + ' is inside the island');
   assert.equal(w.islands.length, 3, 'still the same islands');
+});
+
+// A task's runs, newest first: the latest run's fields are also on the task itself (as the published data does it).
+const runsTask = (name, runs, over = {}) => task(name, { ...runs[0], runs, ...over });
+const finished = (minutes, hoursAgo = 5) => ({ status: 'completed', concl: 'success', date: iso(hoursAgo), ms: minutes * 60e3, url: 'https://example.test/old', event: 'schedule' });
+const progressOf = (tasks, name) => { const a = on(world({ 'NL CRM': tasks }), 'NL CRM').find(x => x.name === name); return a.details.progress === null ? null : progressAt(a.details.progress, NOW); };
+
+test('a running task shows exact progress from its steps, or an estimate from its past runs, or nothing', () => {
+  const startedMinutesAgo = m => ({ status: 'in_progress', concl: null, date: new Date(NOW - m * 60e3).toISOString() });
+  assert.deepEqual(progressOf([runsTask('exact', [{ ...startedMinutesAgo(3), steps: { done: 3, total: 8 } }, finished(6)])], 'exact'), { value: 37, exact: true });
+  assert.deepEqual(progressOf([runsTask('guess', [startedMinutesAgo(3), finished(6), finished(6), finished(6)])], 'guess'), { value: 50, exact: false });
+  assert.equal(progressOf([runsTask('unknown', [startedMinutesAgo(3)])], 'unknown'), null, 'nothing to base a figure on');
+});
+
+test('a task whose run has finished shows complete when it succeeded and where it stopped when it failed', () => {
+  assert.deepEqual(progressOf([runsTask('done', [finished(6), finished(6)])], 'done'), { value: 100, exact: true });
+  const broke = { status: 'completed', concl: 'failure', date: iso(2), ms: 3 * 60e3, steps: { done: 4, total: 9 } };
+  assert.deepEqual(progressOf([runsTask('broke', [broke, finished(6)])], 'broke'), { value: 44, exact: true });
+});
+
+test('a queued or never-run or disabled task has no progress to show', () => {
+  assert.equal(progressOf([runsTask('queued', [{ status: 'queued', concl: null, date: iso(0.01) }, finished(6)])], 'queued'), null);
+  assert.equal(progressOf([{ name: 'never', enabled: true }], 'never'), null);
+  assert.equal(on(world({ 'NL CRM': [{ name: 'never', enabled: true }] }), 'NL CRM').find(x => x.name === 'never').details.progress, null);
+  assert.equal(progressOf([runsTask('off', [finished(6), finished(6)], { enabled: false })], 'off'), null, 'a disabled task is not showing progress, whatever its last run was');
+});
+
+test('workflows of a published repo have no progress: it belongs to tasks', () => {
+  const repo = { name: 'r', full: 'me/r', desc: '', url: 'https://github.com/me/r', home: '', lang: 'JS', pushed: iso(1), priv: false, issues: 0, prs: '—', commits: [],
+    workflows: [{ name: 'Scan', status: 'in_progress', concl: null, date: iso(1), url: 'u', event: 'schedule', runs: [{ status: 'in_progress', concl: null, date: iso(1), url: 'u', event: 'schedule' }] }] };
+  const w = buildWorld({ repos: [repo] }, { localAgents: [] }, NOW, {});
+  assert.equal('progress' in w.agents.find(a => a.name === 'Scan').details, false);
 });
