@@ -172,16 +172,16 @@ async function refresh() {
 
 // ----- progress: a small bar over each working task astronaut, and the open card's bar, kept moving between refreshes
 const progressBars = new Map();   // working task agent id -> its floating bar
+let lastProgressSecond = -1;
 function syncProgressBars(w) {
   for (const e of progressBars.values()) e.remove();
   progressBars.clear();
   for (const a of w.agents) {
-    if (a.status !== 'running' || !a.details?.progress) continue;
+    if (a.status !== 'running' || !a.details?.progress || a.details.progress.state === 'queued') continue;   // a queued run never has a figure
     const e = el('div', 'pbar'), track = el('b'); track.append(el('i')); e.append(track, el('span')); labels.append(e); progressBars.set(a.id, e);
   }
   lastProgressSecond = -1;
 }
-let lastProgressSecond = -1;
 function updateProgress(t) {
   const second = Math.floor(t);
   if (second === lastProgressSecond || !state.world) return;

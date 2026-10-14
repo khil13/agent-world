@@ -12,7 +12,7 @@ const WORDS = {
   Reports: /\b(report|summary|export)/,
 };
 
-// The colour each district tints the floor tiles under its astronauts, so a group can be seen on the island.
+// The colour of the ring under each of a district's astronauts, so a group can be seen on the island.
 export const DISTRICT_TINT = { News: 0x4aa8ff, Contacts: 0xb07cff, Competitors: 0xff8a4a, Research: 0x3fd6a0, Reports: 0xffd24a, Other: 0x8b94a3 };
 
 export function districtOf(name) {
