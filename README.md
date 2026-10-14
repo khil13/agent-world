@@ -52,6 +52,15 @@ and appears in the overview's attention list). The page can only see whether a s
 no cross-origin headers, so an error page counts as an answer. These islands need no GitHub data, so they stay even when the
 repos behind them are private.
 
+## Tasks and the demo
+
+A CRM's **tasks** (its GitHub workflows) are agents on that CRM's island, beside its website agent: a task is working while its
+run goes (or is queued), asleep after it, flashing "!" when its last run failed, and asleep and greyed when it is switched off.
+The world model takes them from a task feed (`opts.tasks`, keyed by island name). The real feed arrives with the server function
+(see ADR 0002); until then add `?demo=tasks` to the address to fill the NL, DK and BE islands with fifteen invented demo tasks
+each (`src/demo.mjs`: every name starts with "Demo", and nothing in it is a real task). A label in the header says the tasks are
+invented, and a demo task never offers to start anything. Without the option the page is exactly as it was.
+
 ## Cowork / local agents
 
 GitHub cannot see agents that run elsewhere, so they are listed by hand in `src/config.mjs`. They are shown asleep and
@@ -81,7 +90,7 @@ connection and a browser with WebGL. Every model and texture is drawn in code; t
 
 | Area | Files |
 | --- | --- |
-| Pure logic, tested without a browser | `world.mjs` (islands, agents, events, designs), `sites.mjs` (website checks), `personal.mjs` (what a visitor chooses just for themselves, kept in their own browser), `anim.mjs` (poses, the work cycle, the replay clock), `overview.mjs` (manager totals), `activation.mjs`, `data.mjs`, `feed.mjs` |
+| Pure logic, tested without a browser | `world.mjs` (islands, agents, events, designs), `sites.mjs` (website checks), `personal.mjs` (what a visitor chooses just for themselves, kept in their own browser), `demo.mjs` (invented demo tasks), `anim.mjs` (poses, the work cycle, the replay clock), `overview.mjs` (manager totals), `activation.mjs`, `data.mjs`, `feed.mjs` |
 | Page | `main.mjs` (wires everything), `list.mjs` (overview panel), `panel.mjs` (agent card), `admin.mjs`, `requests.mjs`, `config.mjs`, `index.html`, `style.css` |
 | 3D | `scene.mjs`, `post.mjs` (effects), `space.mjs` (sky, planet, ground), `kit.mjs` (materials and merging), `buildings.mjs`, `bases.mjs`, `decor.mjs`, `models.mjs` (astronauts, symbols), `textures.mjs`, `grounding.mjs` |
 

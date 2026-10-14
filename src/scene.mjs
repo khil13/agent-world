@@ -217,7 +217,7 @@ export function createScene(container, { fx = null, onFxAuto = () => {}, onConte
       building.rotation.y = Math.floor(ph * 8) * (Math.PI / 4);
       building.scale.set(BUILD * k, BUILD * k * look.flat, BUILD * k);   // chunky, like the reference; flatter on a crowded island so it hides nobody
       building.userData.agentId = a.id; addBlob(building, 0.72, 0.05, 0.55);
-      const robot = buildRobot(a.kind, a.name); robot.position.set(a.pos.x, 0.14, a.pos.z + front);
+      const robot = buildRobot(a.kind, a.name, a.disabled); robot.position.set(a.pos.x, 0.14, a.pos.z + front);
       robot.scale.setScalar(astro); robot.rotation.order = 'YXZ'; robot.userData.agentId = a.id; addBlob(robot, 0.2, 0.05, 0.55);
       const carry = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshStandardMaterial({ color: PALETTE.orange, roughness: 0.45 }));
       carry.position.set(0, 0.45, 0.24); carry.visible = false; robot.add(carry);

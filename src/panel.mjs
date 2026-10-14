@@ -31,13 +31,13 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
   const titles = el('div', 'titles');
   titles.append(el('h2', '', agent.kind === 'site' ? `${agent.island} website` : agent.name));
   const chips = el('div', 'chips'), chip = el('span', `chip ${agent.status}`);
-  chip.append(el('span', `dot ${agent.status}`), (agent.kind === 'site' ? SITE_WORD : STATUS_WORD)[agent.status] || agent.status);
+  chip.append(el('span', `dot ${agent.status}`), agent.disabled ? 'Disabled' : d.queued ? 'Queued' : (agent.kind === 'site' ? SITE_WORD : STATUS_WORD)[agent.status] || agent.status);
   chips.append(chip, el('span', 'when', when));
   titles.append(chips);
   const x = el('button', 'x', '×'); x.setAttribute('aria-label', 'Close'); x.onclick = onClose;
   top.append(face, titles, x);
 
-  const bar = el('div', `bar ${agent.status}`); bar.append(el('i')); bar.firstChild.style.width = `${agent.kind === 'site' && agent.status === 'running' ? 100 : BAR[agent.status] ?? 0}%`;
+  const bar = el('div', `bar ${agent.status}`); bar.append(el('i')); bar.firstChild.style.width = `${agent.disabled || (agent.kind === 'workflow' && !d.latest) ? 0 : agent.kind === 'site' && agent.status === 'running' ? 100 : BAR[agent.status] ?? 0}%`;
 
   // For the signed-in Admin, an agent that is not working gets an Activate button in place of the GitHub link
   // (see activation.mjs); everyone else keeps the plain Open link.
@@ -71,8 +71,9 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
 
   const body = el('div', 'body');
   const sub = el('p', 'sub');
-  sub.append(el('span', 'tag', KIND_LABEL[agent.kind] || agent.kind));
+  sub.append(el('span', 'tag', agent.demo ? 'Demo task · invented' : KIND_LABEL[agent.kind] || agent.kind));
   if (agent.repo) sub.append('  in ', el('b', '', agent.repo));
+  else if (agent.kind === 'workflow' && agent.island) sub.append('  on ', el('b', '', agent.island));
   else if (agent.kind === 'site' && safeUrl(agent.url)) { const u = new URL(agent.url); sub.append('  at ', el('b', '', u.host + (u.pathname === '/' ? '' : u.pathname))); }
   body.append(sub);
 
@@ -83,6 +84,8 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
     if (d.role) body.append(el('p', 'role', d.role));
     const grid = el('div', 'stats'); grid.append(stat(d.schedule || '—', 'schedule'));
     body.append(grid, el('p', 'note', d.note));
+  } else if (agent.kind === 'workflow' && !d.latest) {
+    body.append(el('p', 'note', agent.disabled ? 'This task is switched off.' : 'This task has not run yet.'));
   } else if (d.latest) {
     const grid = el('div', 'stats');
     if (agent.kind === 'workflow') grid.append(stat(d.latest.result, 'latest run'), stat((d.latest.event || '—').replace(/_/g, ' '), 'triggered by'));
@@ -97,6 +100,7 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
     }
     body.append(list);
   }
+  if (agent.demo) body.append(el('p', 'note', 'Demo task: invented to try out the world. Nothing here is real.'));
   root.append(top, bar, buttons, ...extras, body);
 }
 

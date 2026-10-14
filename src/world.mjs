@@ -25,6 +25,7 @@ const ms = iso => new Date(iso).getTime();
 const round = v => Math.round(v * 1000) / 1000;
 
 function runResult(run) {
+  if (run.status === 'queued') return 'queued';
   if (run.status !== 'completed') return 'running';
   return run.concl === 'success' ? 'succeeded' : run.concl === 'failure' ? 'failed' : (run.concl || 'no result');
 }
@@ -51,6 +52,23 @@ function agentsOf(r, localAgents, now, skip) {
       repo: r.name, url: r.url, details: { latest: recent[0], recent, count: mine.length } });
   }
   for (const a of localAgents) out.push(localAgent(a, r.name, r.name));
+  return out;
+}
+
+// The tasks of a CRM, from the task feed: each is a workflow agent on that CRM's island, beside its website agent. A task is
+// { name, enabled, status, concl, date, url, event, runs?, repo?, demo? }: the latest run in the words of the published data,
+// and whether the workflow is switched on. A disabled task, and one that has never run, lie asleep.
+const taskStatus = t => (t.enabled === false || !t.status ? 'idle' : runStatus(t));
+function taskAgents(island, tasks) {
+  const seen = new Set(['Website']), out = [];   // a task never takes the website agent's name, nor another task's
+  for (const t of (Array.isArray(tasks) ? tasks : []).filter(x => x && typeof x.name === 'string' && x.name).sort(byName)) {
+    if (seen.has(t.name)) continue;
+    seen.add(t.name);
+    const runs = t.runs && t.runs.length ? t.runs : t.status ? [t] : [];
+    out.push({ id: `${island}::${t.name}`, name: t.name, kind: 'workflow', status: taskStatus(t), repo: t.repo || null, url: t.url || null,
+      ...(t.demo ? { demo: true } : {}), ...(t.enabled === false ? { disabled: true } : {}),
+      details: { latest: runs.length ? runDetail(runs[0]) : null, recent: runs.slice(0, RECENT).map(runDetail), ...(t.enabled !== false && t.status === 'queued' ? { queued: true } : {}) } });
+  }
   return out;
 }
 
@@ -123,7 +141,7 @@ export function buildWorld(data, config = {}, now = Date.now(), opts = {}) {
   for (const r of repos.filter(x => !isDormant(x))) addIsland(r.name, r.name, r.url, agentsOf(r, locals.filter(a => a.repo === r.name), now, skip));
   const lobby = locals.filter(a => !a.repo);
   if (lobby.length) addIsland('Lobby', null, null, lobby.map(a => localAgent(a, null, 'Lobby')));
-  for (const s of config.sites || []) addIsland(s.name, null, s.url, [siteAgent(s, opts.probes?.[s.url])]);
+  for (const s of config.sites || []) addIsland(s.name, null, s.url, [siteAgent(s, opts.probes?.[s.url]), ...taskAgents(s.name, opts.tasks?.[s.name])]);
   if (opts.showDormant) {
     for (const r of repos.filter(isDormant)) islands.push({ name: r.name, repo: r.name, url: r.url, dormant: true, agentCount: 0, rings: 1, radius: CLOSED_RADIUS, scale: 1, health: 'dormant' });
   }

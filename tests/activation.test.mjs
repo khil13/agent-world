@@ -133,3 +133,16 @@ test('every server answer has a plain-language message', () => {
   assert.match(describeError('cooldown', 90), /2 minutes|1 minute|90|minute/i);
   assert.equal(describeError('something-new'), describeError('unknown'));
 });
+
+test('a demo task is invented: even in a CRM repo it gets a disabled Work button that says there is nothing to start', () => {
+  for (const status of ['ok', 'fail', 'idle']) {
+    const demo = flow(status, { demo: true });
+    for (const admin of [true, false]) {
+      const o = offerFor(demo, { admin });
+      assert.deepEqual([o.kind, o.label], ['manual', 'Work'], `${status}, admin ${admin}`);
+      assert.match(o.note, /demo/i);
+    }
+  }
+  assert.equal(offerFor(flow('running', { demo: true }), { admin: true }), null, 'a working one still has nothing to start');
+  assert.equal(offerFor(flow('ok'), { admin: true }).kind, 'activate', 'a real task in the same repo is unaffected');
+});

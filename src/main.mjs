@@ -12,8 +12,11 @@ import { initAdmin, isAdmin, onAdminChange, mountSignIn, signOut } from './admin
 import { offerFor } from './activation.mjs';
 import { createRequests } from './requests.mjs';
 import { personal } from './personal.mjs';
+import { demoTasks } from './demo.mjs';
 
 const mine = personal();   // what this visitor chose just for themselves, kept in their own browser
+// ?demo=tasks fills the CRM islands with invented demo tasks (see demo.mjs); without it the page shows real data only
+const demoOn = new URLSearchParams(location.search).get('demo') === 'tasks';
 
 const $ = s => document.querySelector(s);
 const feed = createFeed($('#feed'));
@@ -28,6 +31,7 @@ function setFeedOpen(open) {
 toggle.onclick = () => setFeedOpen(feedBox.classList.contains('collapsed'));
 if (mine.choice('feedOpen', ['1', '0'], '0') === '1') setFeedOpen(true);   // collapsed by default
 const labels = $('#labels'), card = $('#card'), side = $('#side');
+const demoTag = $('#demoTag'); if (demoTag) demoTag.hidden = !demoOn;   // an older cached page may not have the label yet
 const state = { builtAt: 0, data: null, probes: {}, world: null, selectedAgent: null, selectedIsland: null, hoverAgent: null, showDormant: false, expanded: new Set(), needsFit: true };
 const ui = { papers: [], errands: [], hubGlow: 0 };
 const bubbles = new Map();       // agent id -> { el, from, until }
@@ -74,10 +78,11 @@ onAdminChange(() => { showAdmin(); act.confirming = act.busy = act.error = null;
 // ----- building and refreshing the world
 function rebuild() {
   if (!state.data) return;
-  const base = buildWorld(state.data, CONFIG, Date.now(), { showDormant: state.showDormant, probes: state.probes });
+  const now = Date.now(), tasks = demoOn ? demoTasks(now) : undefined;
+  const base = buildWorld(state.data, CONFIG, now, { showDormant: state.showDormant, probes: state.probes, tasks });
   reqs.reconcileWith(base.agents);   // a run the hourly data has caught up with no longer needs its own overlay
   const overrides = reqs.overrides();
-  state.world = Object.keys(overrides).length ? buildWorld(state.data, CONFIG, Date.now(), { showDormant: state.showDormant, probes: state.probes, statusOverrides: overrides }) : base;
+  state.world = Object.keys(overrides).length ? buildWorld(state.data, CONFIG, now, { showDormant: state.showDormant, probes: state.probes, tasks, statusOverrides: overrides }) : base;
   const w = state.world;
   if (state.selectedAgent && !w.agents.some(a => a.id === state.selectedAgent)) state.selectedAgent = null;
   if (state.selectedIsland && !w.islands.some(i => i.name === state.selectedIsland)) state.selectedIsland = null;

@@ -48,6 +48,10 @@ _Avoid_: Wake, trigger, run now (the button says Work, the concept is Activate)
 One job a CRM does on a schedule or on demand: a GitHub workflow in a CRM repo (a scan, a discovery, a report). Each task is one agent and stands on its CRM's island, with the CRM's website agent.
 _Avoid_: Job (GitHub's word for a group of steps inside one run), step
 
+**Demo task**:
+An invented task shown only when the address asks for the demo (`?demo=tasks`), to see a CRM island full of task agents without any real data. Its name always starts with "Demo", a label says it is invented, and it can never be started.
+_Avoid_: Fake task, mock
+
 **Progress**:
 How far the run a working task is in has got, as a percentage. Exact when the run reports its steps, otherwise an estimate from how long the task usually takes, shown with a "≈". A task that is not working has no progress; it shows its last result and when it runs next.
 _Avoid_: Completion, status

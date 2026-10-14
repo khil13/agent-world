@@ -13,6 +13,7 @@ const httpsOr = (url, fallback) => (typeof url === 'string' && /^https:\/\//.tes
 
 // Why the button is disabled for an agent that cannot be started from here.
 function whyNot(agent) {
+  if (agent.demo) return 'A demo task: it is invented to try out the world, so there is nothing to start.';
   if (agent.kind === 'site') return 'A website is working while it answers: there is nothing to start.';
   if (agent.kind === 'human') return 'This is you: you work when you do.';
   if (agent.kind === 'builder') return agent.name === 'Auto-commit bot' ? 'The bot works by itself when its own schedule runs.' : 'Claude works when you open a session in this repo.';
@@ -25,7 +26,7 @@ function whyNot(agent) {
 // `request` is the pending request for this agent, `phase` its current phase.
 export function offerFor(agent, { admin = false, request = null, phase = null } = {}) {
   if (!agent) return null;
-  const startable = agent.kind === 'workflow' && STARTABLE_REPOS.includes(agent.repo) && !NOT_STARTABLE_NAMES.has(String(agent.name).toLowerCase());
+  const startable = !agent.demo && agent.kind === 'workflow' && STARTABLE_REPOS.includes(agent.repo) && !NOT_STARTABLE_NAMES.has(String(agent.name).toLowerCase());
   if (admin && startable && request && (phase === 'requested' || phase === 'working')) return { kind: 'pending', label: phase === 'requested' ? 'Run requested' : 'Running…' };
   if (agent.status === 'running') return null;
   if (!startable && agent.kind !== 'local') return { kind: 'manual', label: 'Work', note: whyNot(agent) };

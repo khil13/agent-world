@@ -11,9 +11,9 @@ export { buildHub, buildingFor, HUB_TOP } from './buildings.mjs';
 // box with a hose to the backpack, dark puffy gloves and boots. No face: the visor is just glass.
 // The patch is a plain coloured disc, not any real agency's badge.
 const SUITS = { workflow: 0xff7a1a, builder: 0xff3d8a, bot: 0xe5353b, human: 0x2f86ff, local: 0x9a62ff, site: 0x14b8a6 };
-export function buildRobot(kind, name) {
+export function buildRobot(kind, name, disabled = false) {
   const key = kind === 'builder' ? (name === 'Auto-commit bot' ? 'bot' : 'builder') : SUITS[kind] ? kind : 'workflow';
-  const SUIT = SUITS[key], trim = 0xffffff;
+  const SUIT = disabled ? 0x9aa3b2 : SUITS[key], trim = 0xffffff;   // a disabled task is greyed out
   const WHITE = 0xf3f5f9, GREY = 0xdfe4ec, STEEL = 0x8b94a3, DARK = 0x2d3240;
   // One vertex-coloured fabric material (its own, because the alarm flashes it red) covers the whole suit, so every
   // part of it merges into a single mesh.
