@@ -81,7 +81,7 @@ connection and a browser with WebGL. Every model and texture is drawn in code; t
 
 | Area | Files |
 | --- | --- |
-| Pure logic, tested without a browser | `world.mjs` (islands, agents, events, designs), `sites.mjs` (website checks), `anim.mjs` (poses, the work cycle, the replay clock), `overview.mjs` (manager totals), `activation.mjs`, `data.mjs`, `feed.mjs` |
+| Pure logic, tested without a browser | `world.mjs` (islands, agents, events, designs), `sites.mjs` (website checks), `personal.mjs` (what a visitor chooses just for themselves, kept in their own browser), `anim.mjs` (poses, the work cycle, the replay clock), `overview.mjs` (manager totals), `activation.mjs`, `data.mjs`, `feed.mjs` |
 | Page | `main.mjs` (wires everything), `list.mjs` (overview panel), `panel.mjs` (agent card), `admin.mjs`, `requests.mjs`, `config.mjs`, `index.html`, `style.css` |
 | 3D | `scene.mjs`, `post.mjs` (effects), `space.mjs` (sky, planet, ground), `kit.mjs` (materials and merging), `buildings.mjs`, `bases.mjs`, `decor.mjs`, `models.mjs` (astronauts, symbols), `textures.mjs`, `grounding.mjs` |
 

@@ -11,6 +11,9 @@ import { createFeed } from './feed.mjs';
 import { initAdmin, isAdmin, onAdminChange, mountSignIn, signOut } from './admin.mjs';
 import { offerFor } from './activation.mjs';
 import { createRequests } from './requests.mjs';
+import { personal } from './personal.mjs';
+
+const mine = personal();   // what this visitor chose just for themselves, kept in their own browser
 
 const $ = s => document.querySelector(s);
 const feed = createFeed($('#feed'));
@@ -20,10 +23,10 @@ let unseen = 0;
 function setFeedOpen(open) {
   feedBox.classList.toggle('collapsed', !open); toggle.setAttribute('aria-expanded', String(open));
   if (open) { unseen = 0; badge.hidden = true; }
-  try { localStorage.setItem('world.feedOpen', open ? '1' : '0'); } catch { /* storage blocked: the choice just is not remembered */ }
+  mine.setChoice('feedOpen', open ? '1' : '0');
 }
 toggle.onclick = () => setFeedOpen(feedBox.classList.contains('collapsed'));
-try { if (localStorage.getItem('world.feedOpen') === '1') setFeedOpen(true); } catch { /* collapsed by default */ }
+if (mine.choice('feedOpen', ['1', '0'], '0') === '1') setFeedOpen(true);   // collapsed by default
 const labels = $('#labels'), card = $('#card'), side = $('#side');
 const state = { builtAt: 0, data: null, probes: {}, world: null, selectedAgent: null, selectedIsland: null, hoverAgent: null, showDormant: false, expanded: new Set(), needsFit: true };
 const ui = { papers: [], errands: [], hubGlow: 0 };
@@ -44,8 +47,7 @@ function message(text) { const b = $('#banner'); b.hidden = !text; b.textContent
 // The render effects (ambient occlusion, bloom, tilt-shift) are on by default and drop out by themselves on a slow
 // machine. ?fx=1 or ?fx=0 forces them for a visit; the header button remembers the choice.
 const fxParam = new URLSearchParams(location.search).get('fx');
-let fxSaved = null;
-try { fxSaved = localStorage.getItem('world.fx'); } catch { /* storage blocked: automatic */ }
+const fxSaved = mine.choice('fx', ['on', 'off'], null);   // null: automatic
 const fxForce = fxParam === '1' ? true : fxParam === '0' ? false : fxSaved === 'on' ? true : fxSaved === 'off' ? false : null;
 if (new URLSearchParams(location.search).has('debug')) {   // for measuring: ?debug
   window.__stats = () => scene?.stats(); window.__root = () => scene?.debugRoot();
@@ -269,7 +271,7 @@ showFx();
 $('#btnFx').onclick = () => {
   if (!scene) return;
   const on = !scene.fxOn(); scene.setFx(on); showFx();
-  try { localStorage.setItem('world.fx', on ? 'on' : 'off'); } catch { /* storage blocked: the choice just is not remembered */ }
+  mine.setChoice('fx', on ? 'on' : 'off');
 };
 $('#btnDormant').onclick = $('#tbDormant').onclick = toggleDormant;
 $('#tbIn').onclick = () => scene?.zoom(0.7);
