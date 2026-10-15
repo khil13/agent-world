@@ -18,16 +18,10 @@ import { progressAt, progressLabel, stuckAt } from './progress.mjs';
 import { taskDetails, isTask } from './details.mjs';
 import { renderDrawer } from './drawer.mjs';
 import { cleanColours, choiceOf, setColour, resetColour, applyToIsland } from './colours.mjs';
-import { createNbaFeed } from './nbafeed.mjs';
-import { demoNba } from './nbademo.mjs';
-import { mergeAverages, cleanSlip, addLeg, removeLeg, settleSlip, gamesSignature, gameAgents, legId, STATS } from './nba.mjs';
-import { renderProps } from './props.mjs';
 
 const mine = personal();   // what this visitor chose just for themselves, kept in their own browser
-// ?demo=tasks fills the CRM islands with invented demo tasks (see demo.mjs) and ?demo=nba puts an invented night of games on the
-// NBA island (see nbademo.mjs); ?demo=tasks,nba does both. Without it the page shows real data only.
-const demos = (new URLSearchParams(location.search).get('demo') || '').split(',');
-const demoOn = demos.includes('tasks'), nbaDemo = demos.includes('nba');
+// ?demo=tasks fills the CRM islands with invented demo tasks (see demo.mjs); without it the page shows real data only
+const demoOn = new URLSearchParams(location.search).get('demo') === 'tasks';
 
 const $ = s => document.querySelector(s);
 const feed = createFeed($('#feed'));
@@ -42,14 +36,9 @@ function setFeedOpen(open) {
 toggle.onclick = () => setFeedOpen(feedBox.classList.contains('collapsed'));
 if (mine.choice('feedOpen', ['1', '0'], '0') === '1') setFeedOpen(true);   // collapsed by default
 const labels = $('#labels'), card = $('#card'), side = $('#side');
-const demoTag = $('#demoTag'); if (demoTag) { demoTag.hidden = !demoOn && !nbaDemo; if (nbaDemo) { demoTag.textContent = demoOn ? 'demo tasks & games · invented' : 'demo games · invented'; demoTag.title = 'The NBA teams, players and figures (and any demo tasks) are invented. Remove ?demo from the address to see the real world.'; } }   // an older cached page may not have the label yet
+const demoTag = $('#demoTag'); if (demoTag) demoTag.hidden = !demoOn;   // an older cached page may not have the label yet
 const state = { builtAt: 0, data: null, probes: {}, world: null, selectedAgent: null, selectedIsland: null, hoverAgent: null, showDormant: false, expanded: new Set(), needsFit: true, drawerOpen: false, drawerTab: 'overview', colours: cleanColours(mine.json('colours', {})), coloursOpen: false };
 const drawer = $('#drawer');   // missing in an older cached page, which then simply has no drawer
-// The NBA island: the games on the board, their box scores, the season averages seen so far (kept, so a game that has started
-// still has its lines) and the visitor's slip, both kept in this browser only. See nba.mjs and props.mjs.
-const propsBox = $('#props'), nbaOn = !!CONFIG.nba && !!propsBox;
-const nba = { games: [], boxes: {}, averages: mine.json('nbaAverages', {}, v => typeof v === 'object' && !Array.isArray(v)), slip: cleanSlip(mine.json('nbaSlip', [])),
-  open: false, tab: 'game', gameId: null, stat: mine.choice('nbaStat', STATS.map(x => x[0]), 'pts'), lines: {}, signature: '' };
 const ui = { papers: [], errands: [], hubGlow: 0 };
 const bubbles = new Map();       // agent id -> { el, from, until }
 const islandLabels = new Map();  // island name -> element
@@ -96,11 +85,11 @@ onAdminChange(() => { showAdmin(); act.confirming = act.busy = act.error = null;
 function rebuild() {
   if (!state.data) return;
   scene?.setColours(state.colours);   // the visitor's astronaut colours, for every astronaut built from here on
-  const now = Date.now(), tasks = demoOn ? demoTasks(now) : undefined, games = nbaOn ? nba : undefined;
-  const base = buildWorld(state.data, CONFIG, now, { showDormant: state.showDormant, probes: state.probes, tasks, nba: games });
+  const now = Date.now(), tasks = demoOn ? demoTasks(now) : undefined;
+  const base = buildWorld(state.data, CONFIG, now, { showDormant: state.showDormant, probes: state.probes, tasks });
   reqs.reconcileWith(base.agents);   // a run the hourly data has caught up with no longer needs its own overlay
   const overrides = reqs.overrides();
-  state.world = Object.keys(overrides).length ? buildWorld(state.data, CONFIG, now, { showDormant: state.showDormant, probes: state.probes, tasks, nba: games, statusOverrides: overrides }) : base;
+  state.world = Object.keys(overrides).length ? buildWorld(state.data, CONFIG, now, { showDormant: state.showDormant, probes: state.probes, tasks, statusOverrides: overrides }) : base;
   const w = state.world;
   if (state.selectedAgent && !w.agents.some(a => a.id === state.selectedAgent)) state.selectedAgent = null;
   if (state.selectedIsland && !w.islands.some(i => i.name === state.selectedIsland)) state.selectedIsland = null;
@@ -120,10 +109,8 @@ function rebuild() {
 function refreshUi() {
   if (state.world) renderList(side, state.world, state, { island: selectIsland, agent: selectAgent });
   const agent = state.world?.agents.find(a => a.id === state.selectedAgent) || null;
-  renderPanel(card, agent, clearSelection, Date.now(), { focus: () => scene?.focusAgent(state.selectedAgent), activation: agent && activationFor(agent), details: drawer ? openDrawer : null, colours: agent && coloursFor(agent),
-    props: agent?.kind === 'game' && nbaOn ? () => openProps(agent.gameId) : null });
+  renderPanel(card, agent, clearSelection, Date.now(), { focus: () => scene?.focusAgent(state.selectedAgent), activation: agent && activationFor(agent), details: drawer ? openDrawer : null, colours: agent && coloursFor(agent) });
   refreshDrawer(agent);
-  refreshProps();
   if (agent) placeCard();
 }
 
@@ -156,59 +143,9 @@ function refreshDrawer(agent = state.world?.agents.find(a => a.id === state.sele
   if (state.drawerOpen && !isTask(agent)) state.drawerOpen = false;
   renderDrawer(drawer, state.drawerOpen ? taskDetails(agent, Date.now()) : null, { tab: state.drawerTab, onTab: t => { state.drawerTab = t; refreshDrawer(); }, onClose: closeDrawer });
 }
-function openDrawer() { state.drawerOpen = true; closeProps(); refreshDrawer(); }
+function openDrawer() { state.drawerOpen = true; refreshDrawer(); }
 function closeDrawer() { state.drawerOpen = false; refreshDrawer(); }
-addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (state.drawerOpen) closeDrawer(); else if (nba.open) closeProps(); });
-
-// ----- the NBA props panel: opens from a game's card (on that game) or the header's props button (on the slip)
-function saveSlip(slip) { nba.slip = slip; mine.setJson('nbaSlip', slip); }
-function refreshProps() {
-  if (!nbaOn) return;
-  renderProps(propsBox, nba, {
-    close: closeProps,
-    tab: t => { nba.tab = t; refreshProps(); },
-    game: id => { nba.gameId = id; refreshProps(); },
-    stat: k => { nba.stat = k; mine.setChoice('nbaStat', k); refreshProps(); },
-    line: (key, value) => { nba.lines[key] = value; },   // kept as typed; it is read when an Over or Under is picked
-    pick: ({ game, player, stat, side, line }) => {
-      const id = legId(game.id, player.id, stat), had = nba.slip.find(l => l.id === id);
-      if (had && had.side === side && had.line === line) saveSlip(removeLeg(nba.slip, id));   // the same pick again takes it off
-      else if (Number.isFinite(line) && line >= 0) saveSlip(settleSlip(addLeg(nba.slip, { gameId: game.id, game: `${game.away.abbr} @ ${game.home.abbr}`, playerId: player.id, player: player.name, team: player.team, stat, side, line }), nba.games, nba.boxes));
-      refreshProps();
-    },
-    remove: id => { saveSlip(removeLeg(nba.slip, id)); refreshProps(); },
-    clear: () => { saveSlip([]); refreshProps(); },
-  });
-  const b = $('#btnProps'); if (b) b.textContent = `🏀 props${nba.slip.length ? ` · ${nba.slip.length}` : ''}`;
-}
-function openProps(gameId) {
-  nba.open = true; nba.tab = gameId ? 'game' : nba.slip.length || !nba.games.length ? 'slip' : 'game';
-  if (gameId) nba.gameId = gameId;
-  if (state.drawerOpen) closeDrawer();
-  refreshProps();
-}
-function closeProps() { if (!nba.open) return; nba.open = false; refreshProps(); }
-
-// Tonight's games: asked for every 30 seconds while one is live (every 10 in the demo, whose games move faster) and every five
-// minutes otherwise. The world is only rebuilt when a game starts or ends; a new score goes onto the cards and the panel.
-const nbaFeed = createNbaFeed();
-async function refreshNba() {
-  const got = nbaDemo ? demoNba(Date.now()) : await nbaFeed();
-  if (got && navigator.onLine !== false) {
-    nba.games = got.games; nba.boxes = got.boxes;
-    if (!nbaDemo) { nba.averages = mergeAverages(nba.averages, got.averages); mine.setJson('nbaAverages', nba.averages); } else nba.averages = got.averages;
-    if (!nba.games.some(g => g.id === nba.gameId)) nba.gameId = (nba.games.find(g => g.state === 'in') || nba.games[0])?.id || null;
-    saveSlip(settleSlip(nba.slip, nba.games, nba.boxes));
-    const sig = gamesSignature(nba.games);
-    if (sig !== nba.signature) { nba.signature = sig; if (state.data) rebuild(); }
-    else if (state.world) {
-      const fresh = new Map(gameAgents(CONFIG.nba.island || 'NBA', nba.games, nba.boxes).map(a => [a.id, a.details]));
-      for (const a of state.world.agents) if (a.kind === 'game' && fresh.has(a.id)) a.details = fresh.get(a.id);
-      refreshUi();
-    }
-  }
-  setTimeout(refreshNba, nba.games.some(g => g.state === 'in') ? (nbaDemo ? 10e3 : 30e3) : 5 * 60e3);
-}
+addEventListener('keydown', e => { if (e.key === 'Escape' && state.drawerOpen) closeDrawer(); });
 
 // What the card offers this agent right now, and what its buttons do (null when there is nothing to offer).
 function activationFor(agent) {
@@ -429,9 +366,6 @@ $('#btnDormant').onclick = $('#tbDormant').onclick = toggleDormant;
 $('#tbIn').onclick = () => scene?.zoom(0.7);
 $('#tbOut').onclick = () => scene?.zoom(1.4);
 
-const btnProps = $('#btnProps');
-if (btnProps) { btnProps.hidden = !nbaOn; btnProps.onclick = () => (nba.open ? closeProps() : openProps(null)); }
 refresh();
 setInterval(refresh, 5 * 60e3);
-if (nbaOn) refreshNba();
 requestAnimationFrame(tick);

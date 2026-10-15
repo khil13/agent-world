@@ -279,27 +279,6 @@ function buildSite(status) {
   return finish(g, band, ring);
 }
 
-// An NBA game: a half court with a hoop, its backboard square glowing in the game's status, a ball by the free-throw line and
-// a little scoreboard on a post. (The props panel opens from its card, see nba.mjs.)
-function buildCourt(status) {
-  const g = new THREE.Group(), put = adder(g), { band, ring } = statusMats(status);
-  padOf(put, 0.5);
-  put(B(0.86, 0.04, 0.7), toy(0xc98a4b, { roughness: 0.7 }), 0, 0.07, 0);                       // the wooden floor
-  put(B(0.88, 0.025, 0.72), band, 0, 0.055, 0);                                                     // the status band round its edge
-  put(B(0.3, 0.005, 0.32), toy(0x2f6fe0), 0, 0.092, -0.12);                                         // the painted key
-  put(new THREE.TorusGeometry(0.12, 0.008, 4, 24), toy(0xffffff), 0, 0.094, 0.04, [Math.PI / 2, 0, 0]);   // free-throw circle
-  put(C(0.025, 0.03, 0.62, 8), steel(), 0, 0.4, -0.33);                                            // the pole
-  put(B(0.025, 0.025, 0.14), steel(), 0, 0.66, -0.26);
-  put(B(0.34, 0.22, 0.025), toy(0xf3f6ff, { roughness: 0.3 }), 0, 0.72, -0.19);                    // backboard
-  put(B(0.12, 0.09, 0.03), ring, 0, 0.69, -0.18);                                                   // its square, glowing
-  put(new THREE.TorusGeometry(0.075, 0.01, 6, 20), toy(0xff6a1a), 0, 0.63, -0.1, [Math.PI / 2, 0, 0]);    // rim
-  put(new THREE.CylinderGeometry(0.075, 0.05, 0.09, 10, 1, true), toy(0xffffff, { transparent: true, opacity: 0.7, side: THREE.DoubleSide }), 0, 0.585, -0.1);   // net
-  put(new THREE.SphereGeometry(0.06, 12, 8), toy(0xe8731f, { roughness: 0.75 }), 0.2, 0.15, 0.12);  // the ball
-  put(C(0.012, 0.012, 0.3, 5), steel(), -0.36, 0.24, 0.25);                                         // scoreboard on a post
-  put(B(0.2, 0.1, 0.03), darkM(), -0.36, 0.42, 0.25); put(B(0.16, 0.05, 0.035), ring, -0.36, 0.42, 0.252);
-  return finish(g, band, ring);
-}
-
 // The base on each island: a wide drum under a glass geodesic dome, an entrance block with a name plate, a glowing door and
 // steps, a connector tube each side and a dish on top. (Built so it stays inside its tile, whatever the scale.)
 export function buildBase(status, scale = 1) {
@@ -362,5 +341,4 @@ export const buildingFor = (agent, status, pick = 0, low = false) =>
   : agent.kind === 'human' ? buildCabin(status)
   : agent.kind === 'local' ? buildDish(status)
   : agent.kind === 'site' ? buildSite(status)
-  : agent.kind === 'game' ? buildCourt(status)
   : agent.name === 'Auto-commit bot' ? buildRover(status) : buildRocket(status);

@@ -167,37 +167,7 @@ button.tile{cursor:pointer} button.tile:hover{border-color:var(--red)}
 .dprog .bar{margin:0 0 10px;height:8px}
 .dhist{list-style:none;margin:0;padding:0} .dhist li{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;padding:7px 0;border-top:1px dashed var(--line)} .dhist li:first-child{border-top:0}
 .dhist .t{grid-column:2;color:var(--dim);font-size:11px} .dhist a{color:var(--cyan)}
-/* the NBA props panel: a game's players against their lines, and the slip (see props.mjs) */
-.props{z-index:8;width:min(420px,calc(100% - 24px));background:var(--panel)}
-.pselect{width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:9px;background:var(--panel2);color:var(--txt);font:inherit}
-.pscore{margin:8px 0 6px;font-weight:700;font-size:14px}
-.pchips{display:flex;gap:5px;flex-wrap:wrap;margin:0 0 8px}
-.pchip{padding:4px 10px;border-radius:99px;border:1px solid var(--line2);background:var(--panel2);color:var(--dim);font:inherit;font-size:11px;font-weight:700;cursor:pointer}
-.pchip:hover{color:var(--txt)} .pchip.on{background:#f2d24a;border-color:#f2d24a;color:#1b1a10}
-.ptable{display:flex;flex-direction:column}
-.prow{display:grid;grid-template-columns:1fr 38px 38px 62px 66px;gap:6px;align-items:center;padding:6px 0;border-top:1px dashed var(--line)}
-.prow.phead{border-top:0;padding-top:0;color:var(--dim);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
-.prow.dnp{opacity:.5}
-.prow .pn{min-width:0;display:flex;flex-direction:column} .prow .pn b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .prow .pn small{color:var(--dim);font-size:10px}
-.prow .pv{text-align:right;color:var(--dim);font-variant-numeric:tabular-nums} .prow .pv.now{color:var(--txt);font-weight:700}
-.pline{width:100%;box-sizing:border-box;padding:4px 6px;border:1px solid var(--line2);border-radius:7px;background:var(--panel2);color:var(--txt);font:inherit;text-align:right}
-.pline:focus{outline:none;border-color:var(--cyan)}
-.prow .pb{display:flex;gap:4px;justify-content:flex-end}
-.pside{width:30px;height:26px;border-radius:7px;border:1px solid var(--line2);background:var(--panel2);color:var(--txt);font:inherit;font-weight:800;cursor:pointer}
-.pside:hover{border-color:var(--cyan)} .pside:disabled{opacity:.35;cursor:default}
-.pside.over.on{background:var(--green);border-color:var(--green);color:#0d1f19} .pside.under.on{background:#ff8f82;border-color:#ff8f82;color:#2a0f0c}
-.psum{display:flex;flex-direction:column;gap:2px;padding:9px 11px;border-radius:10px;background:var(--panel2);margin-bottom:8px} .psum span{color:var(--dim);font-size:12px}
-.psum.won{background:#1f3a31;color:var(--green)} .psum.lost{background:#3a1f1f;color:#ff8f82} .psum.open{background:#18343f;color:var(--cyan)}
-.plegs{list-style:none;margin:0;padding:0}
-.pleg{padding:8px 0;border-top:1px dashed var(--line)} .pleg:first-child{border-top:0}
-.plt{display:flex;align-items:center;gap:8px} .plt b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pst{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:1px 7px;border-radius:99px;background:var(--panel2);color:var(--dim)}
-.pst.hit{color:var(--green)} .pst.miss{color:#ff8f82} .pst.live{color:var(--cyan)} .pst.push{color:var(--amber)}
-.plw{color:var(--dim);font-size:12px;margin:2px 0 6px}
-.pleg .bar{margin:0;height:6px} .pleg .bar.running i{background:var(--cyan)}
-.plv{margin-top:3px;font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
-.pclear{width:100%;margin-top:10px}
-@media (max-width:820px){.side{display:none}.feed{display:none}.card{width:calc(100% - 24px)}.drawer{left:12px;right:12px;top:auto;height:70%;width:auto}.prow{grid-template-columns:1fr 34px 34px 56px 64px}}
+@media (max-width:820px){.side{display:none}.feed{display:none}.card{width:calc(100% - 24px)}.drawer{left:12px;right:12px;top:auto;height:70%;width:auto}}
 
 /* The Work button (the real start is for the signed-in Admin only) */
 .open.run{border:0;cursor:pointer;font:inherit;font-weight:700;color:#fff}

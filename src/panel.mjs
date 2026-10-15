@@ -9,8 +9,7 @@ import { SWATCHES } from './colours.mjs';
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const link = (text, url, cls) => { const a = el('a', cls, text); a.href = url; a.target = '_blank'; a.rel = 'noopener'; return a; };
 
-const KIND_LABEL = { workflow: 'GitHub Action', builder: 'Coding agent', human: 'Human', local: 'Cowork · local agent', site: 'Website', game: 'NBA game' };
-const GAME_WORD = { running: 'Live', ok: 'Final', idle: 'Upcoming' };   // a game is working while it is being played
+const KIND_LABEL = { workflow: 'GitHub Action', builder: 'Coding agent', human: 'Human', local: 'Cowork · local agent', site: 'Website' };
 const BAR = { running: 55, ok: 100, fail: 100, idle: 60, asleep: 0 };
 const SITE_WORD = { running: 'Live', fail: 'Down', idle: 'Checking…' };   // a website is working while it answers
 
@@ -39,20 +38,20 @@ function colourSection(c, agent) {
   return box;
 }
 
-// actions: { focus, activation, details, colours, props } handlers for the buttons and sections.
+// actions: { focus, activation, details, colours } handlers for the buttons and sections.
 export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}) {
   root.replaceChildren();
   root.hidden = !agent;
   if (!agent) return;
   const d = agent.details || {};
-  const when = agent.kind === 'local' ? 'not tracked live' : agent.kind === 'game' ? d.latest?.result || '' : d.latest?.date ? ago(d.latest.date, now) : '';
+  const when = agent.kind === 'local' ? 'not tracked live' : d.latest?.date ? ago(d.latest.date, now) : '';
 
   const top = el('div', 'cardtop');
   const face = el('div', 'avatar'); face.append(el('i'), el('i'));
   const titles = el('div', 'titles');
-  titles.append(el('h2', '', agent.kind === 'site' ? `${agent.island} website` : agent.kind === 'game' && d.game ? `${d.game.away.name} at ${d.game.home.name}` : agent.name));
+  titles.append(el('h2', '', agent.kind === 'site' ? `${agent.island} website` : agent.name));
   const chips = el('div', 'chips'), chip = el('span', `chip ${agent.status}`);
-  chip.append(el('span', `dot ${agent.status}`), agent.kind === 'site' ? SITE_WORD[agent.status] || agent.status : agent.kind === 'game' ? GAME_WORD[agent.status] || agent.status : statusWord(agent));
+  chip.append(el('span', `dot ${agent.status}`), agent.kind === 'site' ? SITE_WORD[agent.status] || agent.status : statusWord(agent));
   const task = isTask(agent);   // only tasks carry progress and a schedule
   const prog = task ? progressAt(d.progress, now) : null, stuck = task && agent.status === 'running' ? stuckAt(d.progress, now) : null;
   chips.append(chip, el('span', 'when', when));
@@ -62,7 +61,7 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
   const x = el('button', 'x', '×'); x.setAttribute('aria-label', 'Close'); x.onclick = onClose;
   top.append(face, titles, x);
 
-  const bar = el('div', `bar ${agent.status}${prog ? ' known' : ''}${prog && !prog.exact ? ' est' : ''}`); bar.append(el('i')); bar.firstChild.style.width = `${prog ? prog.value : agent.disabled || d.queued || (agent.kind === 'workflow' && !d.latest) ? 0 : agent.kind === 'site' && agent.status === 'running' ? 100 : agent.kind === 'game' ? gameBar(d.game) : BAR[agent.status] ?? 0}%`;
+  const bar = el('div', `bar ${agent.status}${prog ? ' known' : ''}${prog && !prog.exact ? ' est' : ''}`); bar.append(el('i')); bar.firstChild.style.width = `${prog ? prog.value : agent.disabled || d.queued || (agent.kind === 'workflow' && !d.latest) ? 0 : agent.kind === 'site' && agent.status === 'running' ? 100 : BAR[agent.status] ?? 0}%`;
 
   // For the signed-in Admin, an agent that is not working gets an Activate button in place of the GitHub link
   // (see activation.mjs); everyone else keeps the plain Open link.
@@ -81,9 +80,6 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
   } else if (offer?.kind === 'manual') {
     const work = el('button', 'open run', '▶ ' + offer.label); work.type = 'button'; work.disabled = true; buttons.append(work);
     if (url) buttons.append(link('↗ Open', url, 'open alt'));
-  } else if (agent.kind === 'game' && actions.props) {
-    const props = el('button', 'open run', '🏀 Props'); props.type = 'button'; props.onclick = actions.props; buttons.append(props);
-    if (url) buttons.append(link('↗ ESPN', url, 'open alt'));
   } else if (url) buttons.append(link('↗ Open', url, 'open'));
   const focus = el('button', 'ghost', '⌖ Focus'); focus.type = 'button'; focus.onclick = () => actions.focus?.();
   if (task && actions.details) { const more = el('button', 'ghost', '☰ Details'); more.type = 'button'; more.onclick = actions.details; buttons.append(more); }
@@ -100,19 +96,14 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
 
   const body = el('div', 'body');
   const sub = el('p', 'sub');
-  sub.append(el('span', 'tag', agent.demo ? (agent.kind === 'game' ? 'Demo game · invented' : 'Demo task · invented') : KIND_LABEL[agent.kind] || agent.kind));
+  sub.append(el('span', 'tag', agent.demo ? 'Demo task · invented' : KIND_LABEL[agent.kind] || agent.kind));
   if (agent.repo) sub.append('  in ', el('b', '', agent.repo));
   else if (agent.kind === 'workflow' && agent.island) sub.append('  on ', el('b', '', agent.island));
   else if (agent.kind === 'site' && safeUrl(agent.url)) { const u = new URL(agent.url); sub.append('  at ', el('b', '', u.host + (u.pathname === '/' ? '' : u.pathname))); }
   if (agent.district) sub.append(' · ', el('b', '', `${agent.district} district`));
   body.append(sub);
 
-  if (agent.kind === 'game' && d.game) {
-    const g = d.game, grid = el('div', 'stats');
-    grid.append(stat(g.state === 'pre' ? '—' : String(g.away.score), g.away.abbr), stat(g.state === 'pre' ? '—' : String(g.home.score), `${g.home.abbr} · home`));
-    body.append(grid, el('p', 'note', g.state === 'pre' ? 'Lines are ready from the season averages. Open the props to put overs and unders on your slip.'
-      : `${d.players || 'No'} players on the box score. Open the props to see them against their lines.`));
-  } else if (agent.kind === 'site') {
+  if (agent.kind === 'site') {
     const grid = el('div', 'stats'); grid.append(stat(d.latest ? `${d.latest.ms} ms` : '—', 'answer time'), stat(d.latest ? ago(d.latest.date, now) : 'checking…', 'last checked'));
     body.append(grid, el('p', 'note', 'This page can only see whether the website answers. It cannot tell a working page from an error page.'));
   } else if (agent.kind === 'local') {
@@ -132,16 +123,8 @@ export function renderPanel(root, agent, onClose, now = Date.now(), actions = {}
     }
     body.append(list);
   }
-  if (agent.demo) body.append(el('p', 'note', agent.kind === 'game' ? 'Demo game: the teams and players are invented. Nothing here is real.' : 'Demo task: invented to try out the world. Nothing here is real.'));
+  if (agent.demo) body.append(el('p', 'note', 'Demo task: invented to try out the world. Nothing here is real.'));
   root.append(top, bar, buttons, ...extras, body, ...(actions.colours ? [colourSection(actions.colours, agent)] : []));
-}
-
-// How far through its 48 minutes a game is (a quarter is 12 minutes; overtime counts as the end).
-function gameBar(g) {
-  if (!g || g.state === 'pre') return 0;
-  if (g.state === 'post' || g.period > 4) return 100;
-  const [m, sec] = String(g.clock || '0:00').split(':').map(Number), left = (Number.isFinite(m) ? m : 0) + (Number.isFinite(sec) ? sec : 0) / 60;
-  return Math.round(Math.min(100, Math.max(0, ((g.period - 1) * 12 + (12 - Math.min(12, left))) / 48 * 100)));
 }
 
 // The grid of figures on the card for an agent (see cardStats in details.mjs).
