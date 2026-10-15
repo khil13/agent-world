@@ -6,7 +6,7 @@ agent (a GitHub Actions workflow, Claude, the auto-commit bot, me, a Cowork task
 tall rocket stands on the hub in the middle.
 
 It is an experiment. It only reads the public `data.json` that the `agent-hq` dashboard publishes (read-only), so it
-shows exactly the repos that dashboard shows and never changes it.
+shows exactly the repos that dashboard shows and never changes it. The NBA island also reads ESPN's public scoreboard (read-only, no key).
 
 - Live: https://venturinodino-creator.github.io/agent-world/
 - Data: https://venturinodino-creator.github.io/agent-hq/data.json (reloaded while the page is open)
@@ -51,6 +51,30 @@ says Live and shows the answer time); one that does not answer within eight seco
 and appears in the overview's attention list). The page can only see whether a site answers, never what it says: the sites send
 no cross-origin headers, so an error page counts as an answer. These islands need no GitHub data, so they stay even when the
 repos behind them are private.
+
+## NBA island and props
+
+The **NBA** island (`nba` in `src/config.mjs`; leave it out to have none) shows tonight's games from ESPN's public scoreboard,
+one astronaut each on a little half court with a hoop. A **live** game is working, a **final** one is done and one still to come
+is asleep until tip-off. The page asks every five minutes, and every 30 seconds while a game is live. The world is only rebuilt
+when a game starts or ends; the score goes onto the card. With no games on the board there is no island.
+
+A game's card shows the score and a **Props** button (the header's **🏀 props** button opens the same panel on your slip):
+
+- **Game props**: every player of the game with their season average, their figure so far and a **line** for the chosen prop
+  (PTS, REB, AST, 3PM, or PRA, which is points, rebounds and assists added together). There are no sportsbook odds, only stats: a line is the nearest half point to the season average
+  ESPN lists for a team's leaders before tip-off (averages are kept in this browser for four days, so a game that has started
+  still has its lines). Type your own book's line into any row. **O** and **U** put an Over or Under on the slip; picking the same
+  one again takes it off.
+- **Slip**: each leg moves towards its line while its game is live, and is marked **hit**, **miss** or **push** as soon as that
+  is decided (an over is won the moment it passes the line, an under lost). A leg whose game has left the board keeps what was
+  last seen. The slip is won when every leg hits and lost on any miss. It is kept in this browser only (at most 20 legs); nothing
+  is staked or sent anywhere.
+
+Add `?demo=nba` to try it without the live feed: six games between invented teams and players (`src/nbademo.mjs`), two of them
+live and moving (a whole game plays out every 24 minutes), two final and two to come. `?demo=tasks,nba` turns on both demos.
+The parsing, lines, slip and settling are pure and tested (`src/nba.mjs`); `src/nbafeed.mjs` reads the feed and `src/props.mjs`
+draws the panel. See ADR 0003.
 
 ## Tasks and the demo
 
@@ -132,8 +156,8 @@ connection and a browser with WebGL. Every model and texture is drawn in code; t
 
 | Area | Files |
 | --- | --- |
-| Pure logic, tested without a browser | `world.mjs` (islands, agents, events, designs), `sites.mjs` (website checks), `personal.mjs` (what a visitor chooses just for themselves, kept in their own browser), `demo.mjs` (invented demo tasks), `progress.mjs` (how far a task's run has got), `districts.mjs` (the kind of job a task does), `schedule.mjs` (when a task runs next), `details.mjs` (what the drawer shows), `colours.mjs` (astronaut colours and what a visitor chose), `timewords.mjs` (time in plain words), `anim.mjs` (poses, the work cycle, the replay clock), `overview.mjs` (manager totals), `activation.mjs`, `data.mjs`, `feed.mjs` |
-| Page | `main.mjs` (wires everything), `list.mjs` (overview panel), `panel.mjs` (agent card), `admin.mjs`, `requests.mjs`, `config.mjs`, `index.html`, `style.css` |
+| Pure logic, tested without a browser | `world.mjs` (islands, agents, events, designs), `sites.mjs` (website checks), `personal.mjs` (what a visitor chooses just for themselves, kept in their own browser), `demo.mjs` (invented demo tasks), `nba.mjs` (games, prop lines, the slip), `nbafeed.mjs` (the ESPN feed), `nbademo.mjs` (an invented night of games), `progress.mjs` (how far a task's run has got), `districts.mjs` (the kind of job a task does), `schedule.mjs` (when a task runs next), `details.mjs` (what the drawer shows), `colours.mjs` (astronaut colours and what a visitor chose), `timewords.mjs` (time in plain words), `anim.mjs` (poses, the work cycle, the replay clock), `overview.mjs` (manager totals), `activation.mjs`, `data.mjs`, `feed.mjs` |
+| Page | `main.mjs` (wires everything), `list.mjs` (overview panel), `panel.mjs` (agent card), `props.mjs` (NBA props panel), `admin.mjs`, `requests.mjs`, `config.mjs`, `index.html`, `style.css` |
 | 3D | `scene.mjs`, `post.mjs` (effects), `space.mjs` (sky, planet, ground), `kit.mjs` (materials and merging), `buildings.mjs`, `bases.mjs`, `decor.mjs`, `models.mjs` (astronauts, symbols), `textures.mjs`, `grounding.mjs` |
 
 ## Develop

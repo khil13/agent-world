@@ -20,6 +20,22 @@ _Avoid_: Inactive, disabled, idle, waiting
 A live website the world watches, listed under `sites` in `src/config.mjs`: an island of its own with one agent, working while the site answers and failing when it does not. Only whether it answers is known, never what it says.
 _Avoid_: Repo, page, app
 
+**Game**:
+An NBA game on tonight's board, an agent of the NBA island with a half court for a building: working while it is live, done when it is final, asleep before tip-off.
+_Avoid_: Match, event
+
+**Prop**:
+A player's figure in one game that a slip can hold: points, rebounds, assists, threes made, or points, rebounds and assists added up (PRA).
+_Avoid_: Bet, market
+
+**Line**:
+The number a prop is measured against. Worked out as the nearest half point to the player's season average, or typed in by the visitor from their own book. There are no odds.
+_Avoid_: Spread, total, odds
+
+**Slip**:
+The visitor's own list of props, each an Over or an Under on a line, kept in their browser only. A leg is pending, live, hit, miss or push; nothing is staked.
+_Avoid_: Ticket, parlay, bet
+
 **Shown repos**:
 The GitHub repos the world draws, listed under `repos` in `src/config.mjs`. A repo that is not on the list makes no island, no agent and no event, however active it is. The lobby and the websites are not repos and are always drawn.
 _Avoid_: Whitelist, filter
