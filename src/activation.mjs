@@ -25,7 +25,7 @@ function whyNot(agent) {
 // 'signin' is the Work button for someone who is not signed in (it asks them to sign in), 'manual' a disabled one with a note.
 // `request` is the pending request for this agent, `phase` its current phase.
 export function offerFor(agent, { admin = false, request = null, phase = null } = {}) {
-  if (!agent) return null;
+  if (!agent || agent.kind === 'game') return null;   // a game is played, not started: its card offers the props instead
   const startable = !agent.demo && agent.kind === 'workflow' && STARTABLE_REPOS.includes(agent.repo) && !NOT_STARTABLE_NAMES.has(String(agent.name).toLowerCase());
   if (admin && startable && request && (phase === 'requested' || phase === 'working')) return { kind: 'pending', label: phase === 'requested' ? 'Run requested' : 'Running…' };
   if (agent.status === 'running') return null;

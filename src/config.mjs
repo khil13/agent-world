@@ -13,6 +13,9 @@ export const CONFIG = {
     { name: 'BE CRM', url: 'https://els-crm.dinov.workers.dev/be/' },
     { name: 'CRM landing', url: 'https://els-crm.dinov.workers.dev/landing' },
   ],
+  // The NBA island: tonight's games from ESPN's public scoreboard, one astronaut per game, working while it is live, and a props
+  // panel to build a slip of overs and unders from the players' figures. Leave it out to have no NBA island.
+  nba: { island: 'NBA' },
   // Workflows that are plumbing, not an agent that does a job: they get no building and no astronaut (matched on the name, any case).
   skipWorkflows: ['pages build and deployment', 'Smoke check', 'CI'],
   localAgents: [

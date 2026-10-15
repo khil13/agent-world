@@ -5,6 +5,7 @@
 import { siteStatus, siteLatest } from './sites.mjs';
 import { progressBasis } from './progress.mjs';
 import { districtOf, districtRank } from './districts.mjs';
+import { gameAgents } from './nba.mjs';
 const DAY = 864e5;
 const DORMANT_DAYS = 30;     // matches the agent-hq legend: dormant = quiet for more than 30 days
 const RUNNING_WINDOW = 30 * 60e3;   // a commit this fresh means the committer is working right now
@@ -148,6 +149,9 @@ export function buildWorld(data, config = {}, now = Date.now(), opts = {}) {
   const lobby = locals.filter(a => !a.repo);
   if (lobby.length) addIsland('Lobby', null, null, lobby.map(a => localAgent(a, null, 'Lobby')));
   for (const s of config.sites || []) addIsland(s.name, null, s.url, [siteAgent(s, opts.probes?.[s.url]), ...taskAgents(s.name, opts.tasks?.[s.name])]);
+  // the NBA island: one agent per game on the board, and no island on a night without games (see nba.mjs)
+  const nbaName = config.nba?.island || 'NBA';
+  if (config.nba && opts.nba?.games?.length) addIsland(nbaName, null, null, gameAgents(nbaName, opts.nba.games, opts.nba.boxes, opts.timeZone));
   if (opts.showDormant) {
     for (const r of repos.filter(isDormant)) islands.push({ name: r.name, repo: r.name, url: r.url, dormant: true, agentCount: 0, rings: 1, radius: CLOSED_RADIUS, scale: 1, health: 'dormant' });
   }

@@ -14,4 +14,4 @@ Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root, created lazi
 
 ## Project
 
-A pixel-art world where the agents behind my GitHub repos live and work. Plain HTML, CSS and ES modules, no build step, hosted on GitHub Pages. It only reads the public `data.json` published by the `agent-hq` dashboard (read-only, never changes agent-hq). Logic that can be tested without a browser lives in `.mjs` files under `src/` with tests in `tests/` (`node --test`).
+A pixel-art world where the agents behind my GitHub repos live and work. Plain HTML, CSS and ES modules, no build step, hosted on GitHub Pages. It only reads the public `data.json` published by the `agent-hq` dashboard (read-only, never changes agent-hq). The NBA island also reads ESPN's public scoreboard from the browser (read-only, see ADR 0003). Logic that can be tested without a browser lives in `.mjs` files under `src/` with tests in `tests/` (`node --test`).

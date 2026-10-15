@@ -1,7 +1,7 @@
 // The colours of the astronauts. Every agent has the suit and helmet colours its kind gives it; a visitor can choose others for any
 // agent (kept in their own browser only, see personal.mjs). A choice is { suit?, helmet? } per agent id, each a '#rrggbb' colour,
 // so the suit and the helmet change separately. Pure: the functions take a choice and give a new one, and never change the old.
-const DEFAULT_SUIT = { workflow: '#ff7a1a', builder: '#ff3d8a', bot: '#e5353b', human: '#2f86ff', local: '#9a62ff', site: '#14b8a6' };
+const DEFAULT_SUIT = { workflow: '#ff7a1a', builder: '#ff3d8a', bot: '#e5353b', human: '#2f86ff', local: '#9a62ff', site: '#14b8a6', game: '#f2d24a' };
 export const DISABLED = '#9aa3b2';   // a disabled task is greyed out, whatever was chosen, so that its state can still be seen
 const PARTS = ['suit', 'helmet'];
 const MAX_AGENTS = 400, MAX_ID = 200;   // how many agents' choices are kept, and how long an agent id may be
